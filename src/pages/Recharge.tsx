@@ -6,6 +6,13 @@ import codmBanner from '@/assets/codm-banner.png';
 import codmIcon from '@/assets/codm-icon.png';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
 import cpCoinsStack from '@/assets/cp-coins-stack.webp';
+import paymentNequi from '@/assets/payment-nequi.png';
+import paymentYape from '@/assets/payment-yape.png';
+import paymentMercadopago from '@/assets/payment-mercadopago.png';
+import paymentEfecty from '@/assets/payment-efecty.svg';
+import paymentBancolombia from '@/assets/payment-bancolombia.png';
+import paymentPaypal from '@/assets/payment-paypal.png';
+import paymentPse from '@/assets/payment-pse.png';
 
 interface CpPackage {
   id: number;
@@ -24,17 +31,18 @@ const cpPackages: CpPackage[] = [
 interface PaymentMethod {
   id: string;
   name: string;
+  logo?: string;
   brands?: string[];
 }
 
 const paymentMethods: PaymentMethod[] = [
   { id: 'card', name: 'Crédito / Débito', brands: ['ELO', 'VISA', 'MC', 'AMEX'] },
-  { id: 'nequi', name: 'NEQUI' },
-  { id: 'yape', name: 'Yape' },
-  { id: 'mercadopago', name: 'MercadoPago' },
-  { id: 'efecty', name: 'Efecty Bancolombia' },
-  { id: 'paypal', name: 'PayPal' },
-  { id: 'pse', name: 'PSE' },
+  { id: 'nequi', name: 'NEQUI', logo: paymentNequi },
+  { id: 'yape', name: 'Yape', logo: paymentYape },
+  { id: 'mercadopago', name: 'MercadoPago', logo: paymentMercadopago },
+  { id: 'efecty', name: 'Efecty Bancolombia', logo: paymentEfecty },
+  { id: 'paypal', name: 'PayPal', logo: paymentPaypal },
+  { id: 'pse', name: 'PSE', logo: paymentPse },
 ];
 
 const Recharge = () => {
@@ -215,9 +223,11 @@ const Recharge = () => {
                   </>
                 ) : (
                   <>
-                    <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-gray-700 flex items-center justify-center">
-                      <span className="text-white font-bold text-xs">{method.name.charAt(0)}</span>
-                    </div>
+                    <img 
+                      src={method.logo} 
+                      alt={method.name} 
+                      className="h-10 mx-auto mb-2 object-contain"
+                    />
                     <p className="text-white text-sm font-medium">{method.name}</p>
                   </>
                 )}
