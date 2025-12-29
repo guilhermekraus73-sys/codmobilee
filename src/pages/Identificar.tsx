@@ -16,7 +16,7 @@ const Identificar = () => {
     e.preventDefault();
     if (playerId.trim()) {
       localStorage.setItem('codm_player_id', playerId);
-      navigate('/quiz');
+      navigate('/recharge');
     }
   };
 
