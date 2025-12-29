@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { Check, CreditCard } from 'lucide-react';
 import codmBanner from '@/assets/codm-banner.png';
 import codmIcon from '@/assets/codm-icon.png';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
@@ -21,10 +21,27 @@ const cpPackages: CpPackage[] = [
   { id: 3, cp: 4000, bonus: 1000, price: 19.90, highlight: true },
 ];
 
+interface PaymentMethod {
+  id: string;
+  name: string;
+  brands?: string[];
+}
+
+const paymentMethods: PaymentMethod[] = [
+  { id: 'card', name: 'Crédito / Débito', brands: ['ELO', 'VISA', 'MC', 'AMEX'] },
+  { id: 'nequi', name: 'NEQUI' },
+  { id: 'yape', name: 'Yape' },
+  { id: 'mercadopago', name: 'MercadoPago' },
+  { id: 'efecty', name: 'Efecty Bancolombia' },
+  { id: 'paypal', name: 'PayPal' },
+  { id: 'pse', name: 'PSE' },
+];
+
 const Recharge = () => {
   const navigate = useNavigate();
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
 
   useEffect(() => {
     const storedId = localStorage.getItem('codm_player_id');
@@ -159,10 +176,60 @@ const Recharge = () => {
           </p>
         </div>
 
+        {/* Section 3 - Método de pago */}
+        <div className="bg-[#141414] border border-gray-800 rounded-xl p-5 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">3</span>
+            </div>
+            <h2 className="text-white font-semibold text-lg">Método de pago</h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {paymentMethods.map((method) => (
+              <button
+                key={method.id}
+                onClick={() => setSelectedPayment(method.id)}
+                className={`relative rounded-xl p-4 text-center transition-all ${
+                  selectedPayment === method.id
+                    ? 'bg-primary/20 border-2 border-primary'
+                    : 'bg-[#1a1a1a] border border-gray-700 hover:border-gray-500'
+                }`}
+              >
+                {/* PROMO badge */}
+                <div className="absolute -top-2 right-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded">
+                  PROMO
+                </div>
+
+                {method.id === 'card' ? (
+                  <>
+                    <CreditCard className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-white text-sm font-medium">{method.name}</p>
+                    <div className="flex items-center justify-center gap-1 mt-1 flex-wrap">
+                      {method.brands?.map((brand) => (
+                        <span key={brand} className="text-[10px] text-gray-400 bg-gray-800 px-1 rounded">
+                          {brand}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-gray-700 flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">{method.name.charAt(0)}</span>
+                    </div>
+                    <p className="text-white text-sm font-medium">{method.name}</p>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Continue Button */}
         <Button 
           onClick={handleContinue}
-          disabled={!selectedPackage}
+          disabled={!selectedPackage || !selectedPayment}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 rounded-xl text-base"
         >
           Continuar
