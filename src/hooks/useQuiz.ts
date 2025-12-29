@@ -33,16 +33,23 @@ export const useQuiz = () => {
 
   const selectAnswer = useCallback((answerIndex: number) => {
     if (progress.showFeedback) return;
+    setProgress(prev => ({
+      ...prev,
+      selectedAnswer: answerIndex
+    }));
+  }, [progress.showFeedback]);
+
+  const confirmAnswer = useCallback(() => {
+    if (progress.selectedAnswer === null || progress.showFeedback) return;
     
     const isLastQuestion = progress.currentQuestionIndex === codmQuestions.length - 1;
     
-    // Set selected answer and show feedback
+    // Save answer and show feedback
     setProgress(prev => {
       const newAnswers = [...prev.answers];
-      newAnswers[prev.currentQuestionIndex] = answerIndex;
+      newAnswers[prev.currentQuestionIndex] = prev.selectedAnswer;
       return {
         ...prev,
-        selectedAnswer: answerIndex,
         answers: newAnswers,
         showFeedback: true
       };
@@ -61,7 +68,7 @@ export const useQuiz = () => {
         }));
       }
     }, 1500);
-  }, [progress.showFeedback, progress.currentQuestionIndex]);
+  }, [progress.selectedAnswer, progress.showFeedback, progress.currentQuestionIndex]);
 
   const calculateScore = useCallback(() => {
     let correct = 0;
@@ -94,6 +101,7 @@ export const useQuiz = () => {
     totalQuestions: codmQuestions.length,
     startQuiz,
     selectAnswer,
+    confirmAnswer,
     calculateScore,
     restartQuiz
   };

@@ -36,13 +36,13 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
             'font-display text-3xl font-bold mb-2',
             isWinner ? 'text-gradient-gold glow-text' : 'text-destructive'
           )}>
-            {isWinner ? 'Parabéns, Soldado!' : 'Missão Falhou!'}
+            {isWinner ? '¡Felicidades, Soldado!' : '¡Misión Fallida!'}
           </h1>
           
           <p className="text-muted-foreground mb-6">
             {isWinner 
-              ? 'Você provou ser um verdadeiro especialista!' 
-              : 'Não desista, tente novamente!'}
+              ? '¡Has demostrado ser un verdadero experto!' 
+              : '¡No te rindas, intenta de nuevo!'}
           </p>
 
           {/* Score Display */}
@@ -53,7 +53,7 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
                 <p className="font-display text-2xl font-bold text-cod-text">
                   {score.correct}
                 </p>
-                <p className="text-xs text-muted-foreground">Corretas</p>
+                <p className="text-xs text-muted-foreground">Correctas</p>
               </div>
               <div className="text-center">
                 <Percent className="w-6 h-6 text-secondary mx-auto mb-2" />
@@ -63,7 +63,7 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
                 )}>
                   {score.percentage}%
                 </p>
-                <p className="text-xs text-muted-foreground">Acertos</p>
+                <p className="text-xs text-muted-foreground">Aciertos</p>
               </div>
               <div className="text-center">
                 <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
@@ -80,20 +80,20 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
             <div className="bg-primary/10 border border-primary/30 rounded-xl p-6 mb-6 animate-pulse-gold">
               <Trophy className="w-10 h-10 text-primary mx-auto mb-3" />
               <h3 className="font-display text-xl font-bold text-primary mb-2">
-                Você Desbloqueou!
+                ¡Has Desbloqueado!
               </h3>
               <p className="text-3xl font-display font-bold text-gradient-gold mb-2">
                 70% OFF
               </p>
               <p className="text-sm text-muted-foreground mb-4">
-                em pacotes de CP (COD Points)
+                en paquetes de CP (COD Points)
               </p>
               <a 
                 href="#" 
                 className="btn-tactical inline-flex items-center gap-2 px-6 py-3 rounded-lg"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Resgatar Prêmio
+                  Canjear Premio
                   <ExternalLink className="w-4 h-4" />
                 </span>
               </a>
@@ -111,7 +111,7 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
             )}
           >
             <RefreshCw className="w-5 h-5" />
-            <span className={isWinner ? '' : 'relative z-10'}>Jogar Novamente</span>
+            <span className={isWinner ? '' : 'relative z-10'}>Jugar de Nuevo</span>
           </button>
         </div>
       </div>
