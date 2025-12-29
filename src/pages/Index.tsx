@@ -11,6 +11,7 @@ const Index = () => {
     totalQuestions,
     startQuiz,
     selectAnswer,
+    confirmAnswer,
     calculateScore,
     restartQuiz
   } = useQuiz();
@@ -29,6 +30,7 @@ const Index = () => {
           selectedAnswer={progress.selectedAnswer}
           showFeedback={progress.showFeedback}
           onSelectAnswer={selectAnswer}
+          onConfirm={confirmAnswer}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { Question } from '@/data/questions';
-import { Check, X } from 'lucide-react';
+import { Check, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuizQuestionProps {
@@ -9,6 +9,7 @@ interface QuizQuestionProps {
   selectedAnswer: number | null;
   showFeedback: boolean;
   onSelectAnswer: (index: number) => void;
+  onConfirm: () => void;
 }
 
 const QuizQuestion = ({
@@ -17,7 +18,8 @@ const QuizQuestion = ({
   totalQuestions,
   selectedAnswer,
   showFeedback,
-  onSelectAnswer
+  onSelectAnswer,
+  onConfirm
 }: QuizQuestionProps) => {
   const isCorrect = selectedAnswer === question.correctAnswer;
 
@@ -27,7 +29,7 @@ const QuizQuestion = ({
       <div className="max-w-lg mx-auto w-full mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="font-display text-sm text-muted-foreground">
-            Pergunta {currentIndex + 1} de {totalQuestions}
+            Pregunta {currentIndex + 1} de {totalQuestions}
           </span>
           <span className="font-display text-sm text-primary">
             {Math.round(((currentIndex + 1) / totalQuestions) * 100)}%
@@ -51,7 +53,7 @@ const QuizQuestion = ({
             </h2>
 
             {/* Options */}
-            <div className="space-y-3">
+            <div className="space-y-3 mb-6">
               {question.options.map((option, index) => {
                 const isSelected = selectedAnswer === index;
                 const isCorrectAnswer = index === question.correctAnswer;
@@ -105,7 +107,7 @@ const QuizQuestion = ({
             {/* Feedback Message */}
             {showFeedback && (
               <div className={cn(
-                'p-4 rounded-lg mt-4 animate-scale-in',
+                'p-4 rounded-lg mb-4 animate-scale-in',
                 isCorrect 
                   ? 'bg-success/20 border border-success/50' 
                   : 'bg-destructive/20 border border-destructive/50'
@@ -114,9 +116,26 @@ const QuizQuestion = ({
                   'font-display font-semibold text-center',
                   isCorrect ? 'text-success' : 'text-destructive'
                 )}>
-                  {isCorrect ? '✓ Correto!' : '✗ Incorreto!'}
+                  {isCorrect ? '¡Correcto!' : '¡Incorrecto!'}
                 </p>
               </div>
+            )}
+
+            {/* Next Button - only show when not in feedback mode */}
+            {!showFeedback && (
+              <button
+                onClick={onConfirm}
+                disabled={selectedAnswer === null}
+                className={cn(
+                  'btn-tactical w-full py-4 rounded-lg text-lg relative z-10',
+                  selectedAnswer === null && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  Siguiente Pregunta
+                  <ChevronRight className="w-5 h-5" />
+                </span>
+              </button>
             )}
           </div>
         </div>

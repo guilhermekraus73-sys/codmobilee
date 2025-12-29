@@ -8,61 +8,61 @@ export interface Question {
 export const codmQuestions: Question[] = [
   {
     id: 1,
-    question: "Qual é a moeda premium usada para comprar itens no Call of Duty: Mobile?",
-    options: ["Créditos", "CP (COD Points)", "Diamantes", "Moedas de Ouro"],
+    question: "¿Cuál es la moneda premium utilizada para comprar artículos en Call of Duty: Mobile?",
+    options: ["Créditos", "CP (COD Points)", "Diamantes", "Monedas de Oro"],
     correctAnswer: 1
   },
   {
     id: 2,
-    question: "Qual modo de jogo permite até 100 jogadores em um grande mapa?",
-    options: ["Multijogador", "Zombies", "Battle Royale", "Tiroteio"],
+    question: "¿Qué modo de juego permite hasta 100 jugadores en un mapa grande?",
+    options: ["Multijugador", "Zombies", "Battle Royale", "Tiroteo"],
     correctAnswer: 2
   },
   {
     id: 3,
-    question: "Qual é o nome do personagem icônico com máscara de caveira em COD Mobile?",
+    question: "¿Cuál es el nombre del personaje icónico con máscara de calavera en COD Mobile?",
     options: ["Price", "Ghost", "Soap", "Alex Mason"],
     correctAnswer: 1
   },
   {
     id: 4,
-    question: "Quantos jogadores compõem uma equipe no modo Buscar e Destruir?",
-    options: ["4 jogadores", "5 jogadores", "6 jogadores", "8 jogadores"],
+    question: "¿Cuántos jugadores componen un equipo en el modo Buscar y Destruir?",
+    options: ["4 jugadores", "5 jugadores", "6 jugadores", "8 jugadores"],
     correctAnswer: 1
   },
   {
     id: 5,
-    question: "Qual é o nome da classe que permite curar aliados no Battle Royale?",
-    options: ["Scout", "Medic", "Ninja", "Defender"],
+    question: "¿Cuál es el nombre de la clase que permite curar aliados en Battle Royale?",
+    options: ["Scout", "Médico", "Ninja", "Defensor"],
     correctAnswer: 1
   },
   {
     id: 6,
-    question: "Qual arma é conhecida como 'AK-47' no jogo?",
+    question: "¿Qué arma es conocida como 'AK-47' en el juego?",
     options: ["AK117", "AK-47", "ASM10", "Man-O-War"],
     correctAnswer: 1
   },
   {
     id: 7,
-    question: "Qual é a pontuação necessária para desbloquear a Scorestreak 'VTOL'?",
-    options: ["1200 pontos", "1400 pontos", "1600 pontos", "1800 pontos"],
+    question: "¿Cuál es la puntuación necesaria para desbloquear la Scorestreak 'VTOL'?",
+    options: ["1200 puntos", "1400 puntos", "1600 puntos", "1800 puntos"],
     correctAnswer: 2
   },
   {
     id: 8,
-    question: "Em qual mapa clássico de COD você pode jogar no modo Multijogador?",
+    question: "¿En qué mapa clásico de COD puedes jugar en el modo Multijugador?",
     options: ["Verdansk", "Nuketown", "Erangel", "Pochinki"],
     correctAnswer: 1
   },
   {
     id: 9,
-    question: "Qual vantagem permite que você se recupere mais rápido de granadas táticas?",
-    options: ["Persistência", "Fantasma", "Determinado", "Ligeiro"],
+    question: "¿Qué ventaja te permite recuperarte más rápido de granadas tácticas?",
+    options: ["Persistencia", "Fantasma", "Determinado", "Ligero"],
     correctAnswer: 2
   },
   {
     id: 10,
-    question: "Qual empresa desenvolveu Call of Duty: Mobile?",
+    question: "¿Qué empresa desarrolló Call of Duty: Mobile?",
     options: ["TiMi Studios", "Epic Games", "Supercell", "Riot Games"],
     correctAnswer: 0
   }

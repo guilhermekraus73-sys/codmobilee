@@ -24,10 +24,10 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
           {/* Title */}
           <div className="text-center mb-8">
             <h1 className="font-display text-3xl md:text-4xl font-bold text-gradient-gold glow-text mb-2">
-              Quiz COD Mobile
+              Encuesta COD Mobile
             </h1>
             <p className="text-cod-text text-lg">
-              Teste seus conhecimentos e ganhe prêmios!
+              ¡Pon a prueba tus conocimientos y gana premios!
             </p>
           </div>
 
@@ -38,12 +38,12 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
               <div className="flex items-center gap-3 mb-2">
                 <Trophy className="w-5 h-5 text-primary" />
                 <span className="font-display text-primary font-semibold">
-                  Prêmio Incrível
+                  Premio Increíble
                 </span>
               </div>
               <p className="text-cod-text text-sm">
-                Acerte 70% ou mais das perguntas e desbloqueie até{' '}
-                <span className="text-primary font-bold">70% OFF</span> em pacotes de CP.
+                Acierta 70% o más de las preguntas y desbloquea hasta{' '}
+                <span className="text-primary font-bold">70% OFF</span> en paquetes de CP.
               </p>
             </div>
 
@@ -52,25 +52,25 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
               <div className="flex items-center gap-3 mb-3">
                 <Target className="w-5 h-5 text-secondary" />
                 <span className="font-display text-cod-text font-semibold">
-                  Regras do Quiz
+                  Reglas del Quiz
                 </span>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <Crosshair className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>10 perguntas sobre Call of Duty Mobile</span>
+                  <span>10 preguntas sobre Call of Duty Mobile</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Crosshair className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Escolha uma resposta para cada pergunta</span>
+                  <span>Elige una respuesta para cada pregunta</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Crosshair className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Confirme sua resposta para avançar</span>
+                  <span>Pulsa siguiente para confirmar y avanzar</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Shield className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>Necessário pelo menos 7 respostas corretas (70%) para ganhar</span>
+                  <span>Necesitas al menos 7 respuestas correctas (70%) para ganar</span>
                 </li>
               </ul>
             </div>
@@ -81,7 +81,7 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
               className="btn-tactical w-full py-4 rounded-lg text-lg relative z-10 animate-pulse-gold"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
-                Começar Quiz
+                Comenzar Quiz
                 <Crosshair className="w-5 h-5" />
               </span>
             </button>
