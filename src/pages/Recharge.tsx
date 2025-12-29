@@ -153,8 +153,7 @@ const Recharge = () => {
                   +100% WEB BONUS
                 </div>
                 
-                <p className="text-white font-bold text-sm sm:text-lg mb-0.5 sm:mb-1">{pkg.cp.toLocaleString()} CP</p>
-                <p className="text-gray-400 text-[10px] sm:text-xs mb-1 sm:mb-2">Límite: 1</p>
+                <p className="text-white font-bold text-sm sm:text-lg mb-1 sm:mb-2">{pkg.cp.toLocaleString()} CP</p>
                 
                 <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5">{pkg.cp} CP</p>
                 <p className="text-yellow-400 font-semibold text-xs sm:text-sm mb-1 sm:mb-2">
