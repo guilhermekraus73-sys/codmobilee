@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Info, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import codmBanner from '@/assets/codm-banner.png';
 import codmIcon from '@/assets/codm-icon.png';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
@@ -23,16 +23,16 @@ const Identificar = () => {
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       {/* Header */}
       <header className="bg-[#111] border-b border-gray-800 py-3 px-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-2">
+        <div className="max-w-2xl mx-auto flex items-center gap-2">
           <span className="text-white font-bold text-sm tracking-wide">CALL OF DUTY</span>
           <span className="text-gray-500">|</span>
           <span className="text-gray-400 text-sm">WEB STORE</span>
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-4xl mx-auto px-4 py-6">
+      <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-6">
         {/* Hero Banner COD Mobile */}
-        <div className="relative rounded-lg overflow-hidden mb-8">
+        <div className="relative rounded-xl overflow-hidden mb-8">
           <img 
             src={codmHeroBanner} 
             alt="Call of Duty Mobile" 
@@ -40,36 +40,58 @@ const Identificar = () => {
           />
         </div>
 
-        {/* Game Selection */}
-        <div className="mb-4">
-          <p className="text-gray-400 text-sm mb-3 italic">Selección de Juego</p>
-          <div className="inline-flex items-center gap-2 bg-[#1a1a1a] border border-primary rounded-full px-4 py-2">
-            <img src={codmIcon} alt="COD Mobile" className="w-6 h-6 rounded" />
-            <span className="text-white font-medium text-sm">Call of Duty Mobile</span>
-          </div>
+        {/* Game Selection Label */}
+        <p className="text-gray-400 text-sm mb-3 italic">Selección de Juego</p>
+        
+        {/* Game Selection Chip */}
+        <div className="inline-flex items-center gap-2 bg-[#1a1a1a] border border-primary rounded-full px-4 py-2 mb-4">
+          <img src={codmIcon} alt="COD Mobile" className="w-6 h-6 rounded" />
+          <span className="text-white font-medium text-sm">Call of Duty Mobile</span>
         </div>
 
-        {/* COD Mobile Banner with icon overlay */}
-        <div className="relative rounded-xl overflow-hidden mb-6">
+        {/* Game Banner with Icon Overlay */}
+        <div className="relative rounded-xl overflow-hidden mb-8 h-20 sm:h-24">
           <img 
             src={codmBanner} 
             alt="Call of Duty Mobile - Garena" 
-            className="w-full h-24 sm:h-28 object-cover object-center"
+            className="w-full h-full object-cover object-center"
           />
+          {/* Icon positioned on left */}
+          <div className="absolute left-3 top-1/2 -translate-y-1/2">
+            <img 
+              src={codmIcon} 
+              alt="COD Mobile" 
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl shadow-xl border-2 border-white/20"
+            />
+          </div>
+          {/* Text overlay */}
+          <div className="absolute left-20 sm:left-24 top-1/2 -translate-y-1/2">
+            <p className="text-white font-bold text-base sm:text-lg drop-shadow-lg">Call of Duty: Mobile - Garena</p>
+            <div className="flex items-center gap-1.5 mt-1 bg-black/40 backdrop-blur-sm rounded-full px-2.5 py-0.5 w-fit">
+              <ShieldCheck className="w-3 h-3 text-white" />
+              <span className="text-white text-xs">100% Secure Payment</span>
+            </div>
+          </div>
         </div>
 
-        {/* ID Form */}
-        <div className="mb-6">
-          <h2 className="text-white font-bold text-lg mb-4 tracking-wide">TU CUENTA COD:M</h2>
+        {/* ID Form Section */}
+        <div className="bg-[#141414] border border-gray-800 rounded-xl p-6 mb-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">1</span>
+            </div>
+            <h2 className="text-white font-semibold text-lg">Ingresar</h2>
+          </div>
           
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
+            <div className="mb-5">
+              <label className="text-gray-300 text-sm mb-2 block">ID de jugador</label>
               <Input
                 type="text"
-                placeholder="Tu ID de jugador de COD:M"
+                placeholder="Introduce el ID del jugador."
                 value={playerId}
                 onChange={(e) => setPlayerId(e.target.value)}
-                className="bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500 rounded-lg h-14 text-base"
+                className="bg-[#0a0a0a] border-gray-700 text-white placeholder:text-gray-500 rounded-lg h-12"
               />
             </div>
 
@@ -83,11 +105,11 @@ const Identificar = () => {
           </form>
         </div>
 
-        {/* Info Card with CP icon */}
-        <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 flex items-start gap-4">
-          <div className="w-14 h-14 flex-shrink-0">
-            <div className="w-full h-full rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">CP</span>
+        {/* Info Card */}
+        <div className="bg-[#141414] border border-gray-800 rounded-xl p-5 flex items-start gap-4">
+          <div className="w-12 h-12 flex-shrink-0">
+            <div className="w-full h-full rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold">CP</span>
             </div>
           </div>
           <div>
@@ -102,10 +124,10 @@ const Identificar = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#111] border-t border-gray-800 py-4 px-4">
-        <div className="max-w-4xl mx-auto text-center">
+      <footer className="bg-[#111] border-t border-gray-800 py-4 px-4 mt-auto">
+        <div className="max-w-2xl mx-auto text-center">
           <p className="text-gray-500 text-xs mb-2">© Activision. Todos los derechos reservados.</p>
-          <div className="flex items-center justify-center gap-4 text-xs">
+          <div className="flex items-center justify-center gap-4 text-xs flex-wrap">
             <a href="#" className="text-gray-500 hover:text-gray-300 transition-colors">Preguntas frecuentes</a>
             <a href="#" className="text-gray-500 hover:text-gray-300 transition-colors">Términos y condiciones</a>
             <a href="#" className="text-gray-500 hover:text-gray-300 transition-colors">Política de privacidad</a>
