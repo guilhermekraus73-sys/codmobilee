@@ -1,5 +1,5 @@
 import { Question } from '@/data/questions';
-import { Check, X, ChevronRight } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuizQuestionProps {
@@ -8,10 +8,7 @@ interface QuizQuestionProps {
   totalQuestions: number;
   selectedAnswer: number | null;
   showFeedback: boolean;
-  isConfirmed: boolean;
   onSelectAnswer: (index: number) => void;
-  onConfirm: () => void;
-  onNext: () => void;
 }
 
 const QuizQuestion = ({
@@ -20,13 +17,9 @@ const QuizQuestion = ({
   totalQuestions,
   selectedAnswer,
   showFeedback,
-  isConfirmed,
-  onSelectAnswer,
-  onConfirm,
-  onNext
+  onSelectAnswer
 }: QuizQuestionProps) => {
   const isCorrect = selectedAnswer === question.correctAnswer;
-  const isLastQuestion = currentIndex === totalQuestions - 1;
 
   return (
     <div className="min-h-screen flex flex-col px-4 py-8">
@@ -50,7 +43,7 @@ const QuizQuestion = ({
 
       {/* Question Card */}
       <div className="flex-1 flex items-center justify-center">
-        <div className="w-full max-w-lg animate-fade-in">
+        <div className="w-full max-w-lg animate-fade-in" key={question.id}>
           <div className="card-military rounded-xl p-6">
             {/* Question Text */}
             <h2 className="font-display text-xl md:text-2xl text-cod-text font-semibold mb-6 leading-tight">
@@ -58,7 +51,7 @@ const QuizQuestion = ({
             </h2>
 
             {/* Options */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-3">
               {question.options.map((option, index) => {
                 const isSelected = selectedAnswer === index;
                 const isCorrectAnswer = index === question.correctAnswer;
@@ -78,11 +71,11 @@ const QuizQuestion = ({
                   <button
                     key={index}
                     onClick={() => onSelectAnswer(index)}
-                    disabled={isConfirmed}
+                    disabled={showFeedback}
                     className={cn(
                       optionClass,
                       'w-full p-4 rounded-lg text-left flex items-center gap-4 group',
-                      isConfirmed && 'cursor-default'
+                      showFeedback && 'cursor-default'
                     )}
                   >
                     <span className={cn(
@@ -112,47 +105,18 @@ const QuizQuestion = ({
             {/* Feedback Message */}
             {showFeedback && (
               <div className={cn(
-                'p-4 rounded-lg mb-4 animate-scale-in',
+                'p-4 rounded-lg mt-4 animate-scale-in',
                 isCorrect 
                   ? 'bg-success/20 border border-success/50' 
                   : 'bg-destructive/20 border border-destructive/50'
               )}>
                 <p className={cn(
-                  'font-display font-semibold',
+                  'font-display font-semibold text-center',
                   isCorrect ? 'text-success' : 'text-destructive'
                 )}>
-                  {isCorrect ? '✓ Resposta Correta!' : '✗ Resposta Incorreta!'}
+                  {isCorrect ? '✓ Correto!' : '✗ Incorreto!'}
                 </p>
-                {!isCorrect && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    A resposta correta era: {question.options[question.correctAnswer]}
-                  </p>
-                )}
               </div>
-            )}
-
-            {/* Action Button */}
-            {!isConfirmed ? (
-              <button
-                onClick={onConfirm}
-                disabled={selectedAnswer === null}
-                className={cn(
-                  'btn-tactical w-full py-4 rounded-lg text-lg relative z-10',
-                  selectedAnswer === null && 'opacity-50 cursor-not-allowed'
-                )}
-              >
-                <span className="relative z-10">Confirmar Resposta</span>
-              </button>
-            ) : (
-              <button
-                onClick={onNext}
-                className="btn-tactical w-full py-4 rounded-lg text-lg relative z-10"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  {isLastQuestion ? 'Ver Resultado' : 'Próxima Pergunta'}
-                  <ChevronRight className="w-5 h-5" />
-                </span>
-              </button>
             )}
           </div>
         </div>
