@@ -23,9 +23,9 @@ interface CpPackage {
 }
 
 const cpPackages: CpPackage[] = [
-  { id: 1, cp: 800, bonus: 400, price: 9.00 },
-  { id: 2, cp: 1600, bonus: 1000, price: 15.90 },
-  { id: 3, cp: 4000, bonus: 1200, price: 19.90, highlight: true },
+  { id: 1, cp: 800, bonus: 600, price: 9.00 },
+  { id: 2, cp: 1600, bonus: 1200, price: 15.90 },
+  { id: 3, cp: 4000, bonus: 1500, price: 19.90, highlight: true },
 ];
 
 interface PaymentMethod {
@@ -156,9 +156,12 @@ const Recharge = () => {
                 <p className="text-white font-bold text-sm sm:text-lg mb-0.5 sm:mb-1">{pkg.cp.toLocaleString()} CP</p>
                 <p className="text-gray-400 text-[10px] sm:text-xs mb-1 sm:mb-2">Límite: 1</p>
                 
-                <p className="text-[10px] sm:text-sm mb-1 sm:mb-2">
-                  <span className="text-gray-300">{pkg.cp} + </span>
-                  <span className="text-yellow-400">{pkg.bonus} BONUS</span>
+                <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5">{pkg.cp} CP</p>
+                <p className="text-yellow-400 font-semibold text-xs sm:text-sm mb-1 sm:mb-2">
+                  +{pkg.bonus.toLocaleString()} BÔNUS
+                </p>
+                <p className="text-green-400 text-[9px] sm:text-xs font-medium">
+                  Total: {(pkg.cp + pkg.bonus).toLocaleString()} CP
                 </p>
 
                 <div className="w-10 h-10 sm:w-16 sm:h-16 mx-auto mb-1 sm:mb-3">
