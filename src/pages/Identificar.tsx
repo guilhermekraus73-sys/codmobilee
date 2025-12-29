@@ -6,6 +6,7 @@ import { ShieldCheck } from 'lucide-react';
 import codmBanner from '@/assets/codm-banner.png';
 import codmIcon from '@/assets/codm-icon.png';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
+import cpCoin from '@/assets/cp-coin.png';
 
 const Identificar = () => {
   const [playerId, setPlayerId] = useState('');
@@ -91,10 +92,8 @@ const Identificar = () => {
 
         {/* Info Card */}
         <div className="bg-[#141414] border border-gray-800 rounded-xl p-5 flex items-start gap-4">
-          <div className="w-12 h-12 flex-shrink-0">
-            <div className="w-full h-full rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold">CP</span>
-            </div>
+          <div className="w-14 h-14 flex-shrink-0">
+            <img src={cpCoin} alt="CP Coin" className="w-full h-full object-contain" />
           </div>
           <div>
             <p className="text-gray-300 text-sm">
