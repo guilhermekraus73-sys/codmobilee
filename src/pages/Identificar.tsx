@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Info } from 'lucide-react';
-import codmHero from '@/assets/codm-hero.jpg';
+import { Info, Shield } from 'lucide-react';
+import codmBanner from '@/assets/codm-banner.png';
 
 const Identificar = () => {
   const [playerId, setPlayerId] = useState('');
@@ -12,10 +12,8 @@ const Identificar = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (playerId.trim()) {
-      // Guardar el ID y navegar al quiz
       localStorage.setItem('codm_player_id', playerId);
       navigate('/quiz');
-      navigate('/');
     }
   };
 
@@ -34,23 +32,6 @@ const Identificar = () => {
         </div>
       </header>
 
-      {/* Banner */}
-      <div className="w-full max-w-4xl mx-auto px-4 mt-6">
-        <div className="relative rounded-xl overflow-hidden">
-          <img 
-            src={codmHero} 
-            alt="COD Mobile Banner" 
-            className="w-full h-32 sm:h-40 object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-transparent flex items-center px-6">
-            <div>
-              <p className="text-primary font-orbitron text-lg sm:text-xl font-bold">¡OFERTAS ESPECIALES!</p>
-              <p className="text-foreground text-sm">Hasta 70% de descuento en CP</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Game Selection */}
       <div className="w-full max-w-4xl mx-auto px-4 mt-6">
         <p className="text-muted-foreground text-sm mb-3">Selección de Juego</p>
@@ -62,21 +43,14 @@ const Identificar = () => {
         </div>
       </div>
 
-      {/* COD Mobile Banner */}
+      {/* COD Mobile Banner - Similar to reference */}
       <div className="w-full max-w-4xl mx-auto px-4 mt-4">
-        <div className="relative rounded-xl overflow-hidden bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
-          <div className="flex items-center gap-4 p-4">
-            <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center">
-              <span className="text-primary font-bold">COD</span>
-            </div>
-            <div>
-              <p className="text-foreground font-semibold">Call of Duty Mobile</p>
-              <p className="text-accent text-xs flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-accent"></span>
-                Pago 100% seguro
-              </p>
-            </div>
-          </div>
+        <div className="relative rounded-xl overflow-hidden">
+          <img 
+            src={codmBanner} 
+            alt="Call of Duty Mobile - Garena" 
+            className="w-full h-24 sm:h-28 object-cover object-center"
+          />
         </div>
       </div>
 
@@ -117,11 +91,11 @@ const Identificar = () => {
           </form>
         </div>
 
-        {/* Info Card */}
+        {/* Info Card with CP icon */}
         <div className="bg-card border border-border rounded-xl p-4 mt-4 flex items-start gap-4">
-          <div className="w-12 h-12 flex-shrink-0">
-            <div className="w-full h-full rounded-lg bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-              <span className="text-primary text-2xl">💎</span>
+          <div className="w-14 h-14 flex-shrink-0">
+            <div className="w-full h-full rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-sm">CP</span>
             </div>
           </div>
           <div>
