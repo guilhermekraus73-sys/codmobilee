@@ -135,12 +135,12 @@ const Recharge = () => {
             <h2 className="text-white font-semibold text-lg">Valor de Recarga</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             {cpPackages.map((pkg) => (
               <button
                 key={pkg.id}
                 onClick={() => setSelectedPackage(pkg.id)}
-                className={`relative rounded-xl p-4 text-center transition-all ${
+                className={`relative rounded-xl p-2 sm:p-4 text-center transition-all ${
                   selectedPackage === pkg.id
                     ? 'bg-primary/20 border-2 border-primary'
                     : pkg.highlight
@@ -149,24 +149,24 @@ const Recharge = () => {
                 }`}
               >
                 {/* Small badge at top */}
-                <div className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded inline-block mb-2">
+                <div className="bg-red-600 text-white text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded inline-block mb-1 sm:mb-2">
                   +100% WEB BONUS
                 </div>
                 
-                <p className="text-white font-bold text-lg mb-1">{pkg.cp.toLocaleString()} CP</p>
-                <p className="text-gray-400 text-xs mb-2">Límite: 1</p>
+                <p className="text-white font-bold text-sm sm:text-lg mb-0.5 sm:mb-1">{pkg.cp.toLocaleString()} CP</p>
+                <p className="text-gray-400 text-[10px] sm:text-xs mb-1 sm:mb-2">Límite: 1</p>
                 
-                <p className="text-sm mb-2">
+                <p className="text-[10px] sm:text-sm mb-1 sm:mb-2">
                   <span className="text-gray-300">{pkg.cp} + </span>
                   <span className="text-yellow-400">{pkg.bonus} BONUS</span>
                 </p>
 
-                <div className="w-16 h-16 mx-auto mb-3">
+                <div className="w-10 h-10 sm:w-16 sm:h-16 mx-auto mb-1 sm:mb-3">
                   <img src={cpCoinsStack} alt="CP Coins" className="w-full h-full object-contain" />
                 </div>
 
-                <p className="text-primary font-bold text-xl">US$ {pkg.price.toFixed(2)}</p>
-                <p className="text-red-400 text-xs">Finaliza: 21d 3h 17m</p>
+                <p className="text-primary font-bold text-sm sm:text-xl">US$ {pkg.price.toFixed(2)}</p>
+                <p className="text-red-400 text-[10px] sm:text-xs">Finaliza: 21d 3h 17m</p>
               </button>
             ))}
           </div>
