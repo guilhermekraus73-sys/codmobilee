@@ -8,7 +8,6 @@ export interface QuizProgress {
   selectedAnswer: number | null;
   answers: (number | null)[];
   showFeedback: boolean;
-  isConfirmed: boolean;
 }
 
 export const useQuiz = () => {
@@ -17,8 +16,7 @@ export const useQuiz = () => {
     currentQuestionIndex: 0,
     selectedAnswer: null,
     answers: new Array(codmQuestions.length).fill(null),
-    showFeedback: false,
-    isConfirmed: false
+    showFeedback: false
   });
 
   const currentQuestion: Question = codmQuestions[progress.currentQuestionIndex];
@@ -29,49 +27,41 @@ export const useQuiz = () => {
       currentQuestionIndex: 0,
       selectedAnswer: null,
       answers: new Array(codmQuestions.length).fill(null),
-      showFeedback: false,
-      isConfirmed: false
+      showFeedback: false
     });
   }, []);
 
   const selectAnswer = useCallback((answerIndex: number) => {
-    if (progress.isConfirmed) return;
-    setProgress(prev => ({
-      ...prev,
-      selectedAnswer: answerIndex
-    }));
-  }, [progress.isConfirmed]);
-
-  const confirmAnswer = useCallback(() => {
-    if (progress.selectedAnswer === null) return;
+    if (progress.showFeedback) return;
     
-    setProgress(prev => {
-      const newAnswers = [...prev.answers];
-      newAnswers[prev.currentQuestionIndex] = prev.selectedAnswer;
-      return {
-        ...prev,
-        answers: newAnswers,
-        showFeedback: true,
-        isConfirmed: true
-      };
-    });
-  }, [progress.selectedAnswer]);
-
-  const nextQuestion = useCallback(() => {
     const isLastQuestion = progress.currentQuestionIndex === codmQuestions.length - 1;
     
-    if (isLastQuestion) {
-      setQuizState('result');
-    } else {
-      setProgress(prev => ({
+    // Set selected answer and show feedback
+    setProgress(prev => {
+      const newAnswers = [...prev.answers];
+      newAnswers[prev.currentQuestionIndex] = answerIndex;
+      return {
         ...prev,
-        currentQuestionIndex: prev.currentQuestionIndex + 1,
-        selectedAnswer: null,
-        showFeedback: false,
-        isConfirmed: false
-      }));
-    }
-  }, [progress.currentQuestionIndex]);
+        selectedAnswer: answerIndex,
+        answers: newAnswers,
+        showFeedback: true
+      };
+    });
+
+    // Auto advance after delay
+    setTimeout(() => {
+      if (isLastQuestion) {
+        setQuizState('result');
+      } else {
+        setProgress(prev => ({
+          ...prev,
+          currentQuestionIndex: prev.currentQuestionIndex + 1,
+          selectedAnswer: null,
+          showFeedback: false
+        }));
+      }
+    }, 1500);
+  }, [progress.showFeedback, progress.currentQuestionIndex]);
 
   const calculateScore = useCallback(() => {
     let correct = 0;
@@ -93,8 +83,7 @@ export const useQuiz = () => {
       currentQuestionIndex: 0,
       selectedAnswer: null,
       answers: new Array(codmQuestions.length).fill(null),
-      showFeedback: false,
-      isConfirmed: false
+      showFeedback: false
     });
   }, []);
 
@@ -105,8 +94,6 @@ export const useQuiz = () => {
     totalQuestions: codmQuestions.length,
     startQuiz,
     selectAnswer,
-    confirmAnswer,
-    nextQuestion,
     calculateScore,
     restartQuiz
   };
