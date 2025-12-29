@@ -1,13 +1,49 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useQuiz } from '@/hooks/useQuiz';
+import QuizIntro from '@/components/QuizIntro';
+import QuizQuestion from '@/components/QuizQuestion';
+import QuizResult from '@/components/QuizResult';
 
 const Index = () => {
+  const {
+    quizState,
+    progress,
+    currentQuestion,
+    totalQuestions,
+    startQuiz,
+    selectAnswer,
+    confirmAnswer,
+    nextQuestion,
+    calculateScore,
+    restartQuiz
+  } = useQuiz();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <main className="min-h-screen">
+      {quizState === 'intro' && (
+        <QuizIntro onStart={startQuiz} />
+      )}
+
+      {quizState === 'playing' && (
+        <QuizQuestion
+          question={currentQuestion}
+          currentIndex={progress.currentQuestionIndex}
+          totalQuestions={totalQuestions}
+          selectedAnswer={progress.selectedAnswer}
+          showFeedback={progress.showFeedback}
+          isConfirmed={progress.isConfirmed}
+          onSelectAnswer={selectAnswer}
+          onConfirm={confirmAnswer}
+          onNext={nextQuestion}
+        />
+      )}
+
+      {quizState === 'result' && (
+        <QuizResult
+          score={calculateScore()}
+          onRestart={restartQuiz}
+        />
+      )}
+    </main>
   );
 };
 
