@@ -148,14 +148,13 @@ const Recharge = () => {
                     : 'bg-[#1a1a1a] border border-gray-700 hover:border-gray-500'
                 }`}
               >
-                {pkg.highlight && (
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
-                    +100% WEB BONUS
-                  </div>
-                )}
+                {/* Small badge at top */}
+                <div className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded inline-block mb-2">
+                  +100% WEB BONUS
+                </div>
                 
                 <p className="text-white font-bold text-lg mb-1">{pkg.cp.toLocaleString()} CP</p>
-                <p className="text-gray-400 text-xs mb-3">Límite: 1</p>
+                <p className="text-gray-400 text-xs mb-2">Límite: 1</p>
                 
                 <p className="text-sm mb-2">
                   <span className="text-gray-300">{pkg.cp} + </span>
@@ -164,10 +163,6 @@ const Recharge = () => {
 
                 <div className="w-16 h-16 mx-auto mb-3">
                   <img src={cpCoinsStack} alt="CP Coins" className="w-full h-full object-contain" />
-                </div>
-
-                <div className="bg-red-500/90 text-white text-xs font-bold px-2 py-1 rounded inline-block mb-3">
-                  +100% WEB BONUS
                 </div>
 
                 <p className="text-primary font-bold text-xl">US$ {pkg.price.toFixed(2)}</p>
