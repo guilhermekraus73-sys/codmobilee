@@ -5,7 +5,7 @@ import { Check, CreditCard } from 'lucide-react';
 import codmBanner from '@/assets/codm-banner.png';
 import codmIcon from '@/assets/codm-icon.png';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
-import cpCoinsStack from '@/assets/cp-coins-stack.webp';
+import cpCoinsStack from '@/assets/cp-coins-new.png';
 import paymentNequi from '@/assets/payment-nequi.png';
 import paymentYape from '@/assets/payment-yape.png';
 import paymentMercadopago from '@/assets/payment-mercadopago.png';
