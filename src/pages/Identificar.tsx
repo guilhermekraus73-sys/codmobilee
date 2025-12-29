@@ -49,29 +49,13 @@ const Identificar = () => {
           <span className="text-white font-medium text-sm">Call of Duty Mobile</span>
         </div>
 
-        {/* Game Banner with Icon Overlay */}
-        <div className="relative rounded-xl overflow-hidden mb-8 h-20 sm:h-24">
+        {/* Game Banner */}
+        <div className="relative rounded-xl overflow-hidden mb-8">
           <img 
             src={codmBanner} 
             alt="Call of Duty Mobile - Garena" 
-            className="w-full h-full object-cover object-center"
+            className="w-full h-auto object-cover"
           />
-          {/* Icon positioned on left */}
-          <div className="absolute left-3 top-1/2 -translate-y-1/2">
-            <img 
-              src={codmIcon} 
-              alt="COD Mobile" 
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl shadow-xl border-2 border-white/20"
-            />
-          </div>
-          {/* Text overlay */}
-          <div className="absolute left-20 sm:left-24 top-1/2 -translate-y-1/2">
-            <p className="text-white font-bold text-base sm:text-lg drop-shadow-lg">Call of Duty: Mobile - Garena</p>
-            <div className="flex items-center gap-1.5 mt-1 bg-black/40 backdrop-blur-sm rounded-full px-2.5 py-0.5 w-fit">
-              <ShieldCheck className="w-3 h-3 text-white" />
-              <span className="text-white text-xs">100% Secure Payment</span>
-            </div>
-          </div>
         </div>
 
         {/* ID Form Section */}
