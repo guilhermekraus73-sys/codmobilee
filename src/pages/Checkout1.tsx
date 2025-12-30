@@ -46,13 +46,13 @@ const CheckoutForm = () => {
     cp: 800,
     bonus: 600,
     total: 1400,
-    price: '120.00'
+    price: '9.00'
   };
 
   useEffect(() => {
     initUTMTracking();
     trackPageView('checkout1');
-    trackInitiateCheckout(parseFloat(packageData.price), 'COP');
+    trackInitiateCheckout(parseFloat(packageData.price), 'USD');
     
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -170,7 +170,7 @@ const CheckoutForm = () => {
                 {packageData.cp} CP + {packageData.bonus} Bonus
               </p>
               <p className="text-green-500 font-bold text-lg mt-1">
-                Total: $ {packageData.price} COP
+                Total: ${packageData.price} USD
               </p>
             </div>
           </div>
@@ -240,7 +240,7 @@ const CheckoutForm = () => {
               ) : (
                 <>
                   <Lock className="w-5 h-5" />
-                  PAGAR ${packageData.price} COP
+                  PAGAR ${packageData.price} USD
                 </>
               )}
             </Button>
