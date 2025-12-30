@@ -62,16 +62,7 @@ const Recharge = () => {
 
   const handleContinue = () => {
     if (selectedPackage && selectedPayment) {
-      const pkg = cpPackages.find(p => p.id === selectedPackage);
-      if (pkg) {
-        localStorage.setItem('selectedPackage', JSON.stringify({
-          cp: pkg.cp + pkg.bonus,
-          price: pkg.price.toFixed(2),
-          bonus: pkg.bonus,
-          paymentMethod: selectedPayment
-        }));
-        navigate('/checkout');
-      }
+      navigate(`/checkout${selectedPackage}`);
     }
   };
 
@@ -147,9 +138,11 @@ const Recharge = () => {
             {cpPackages.map((pkg) => (
               <button
                 key={pkg.id}
-                onClick={() => navigate(`/checkout${pkg.id}`)}
+                onClick={() => setSelectedPackage(pkg.id)}
                 className={`relative rounded-xl p-2 sm:p-4 text-center transition-all ${
-                  pkg.highlight
+                  selectedPackage === pkg.id
+                    ? 'bg-primary/20 border-2 border-primary'
+                    : pkg.highlight
                     ? 'bg-gradient-to-b from-amber-900/40 to-[#1a1a1a] border border-amber-600/50 hover:border-amber-500'
                     : 'bg-[#1a1a1a] border border-gray-700 hover:border-gray-500'
                 }`}
