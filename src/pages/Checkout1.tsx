@@ -5,6 +5,7 @@ import { Clock, Lock } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import PaymentButton from '@/components/PaymentButton';
+import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
 
 const getCardBrand = (cardNumber: string) => {
   const cleanedNumber = cardNumber.replace(/\s/g, '');
@@ -69,6 +70,11 @@ const Checkout1 = () => {
   const cardBrand = getCardBrand(formData.cardNumber);
 
   useEffect(() => {
+    // Initialize UTM tracking and track checkout
+    initUTMTracking();
+    trackPageView('checkout1');
+    trackInitiateCheckout(parseFloat(packageData.price), 'USD');
+    
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev.seconds > 0) {

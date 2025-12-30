@@ -1,9 +1,16 @@
+import { useEffect } from 'react';
 import { useQuiz } from '@/hooks/useQuiz';
 import QuizIntro from '@/components/QuizIntro';
 import QuizQuestion from '@/components/QuizQuestion';
 import QuizResult from '@/components/QuizResult';
+import { initUTMTracking, trackPageView } from '@/lib/utmify';
 
 const Index = () => {
+  // Initialize UTM tracking on page load
+  useEffect(() => {
+    initUTMTracking();
+    trackPageView('quiz');
+  }, []);
   const {
     quizState,
     progress,
