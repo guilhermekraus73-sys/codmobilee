@@ -61,9 +61,17 @@ const Recharge = () => {
   }, [navigate]);
 
   const handleContinue = () => {
-    if (selectedPackage) {
-      // Handle payment logic here
-      console.log('Selected package:', selectedPackage);
+    if (selectedPackage && selectedPayment) {
+      const pkg = cpPackages.find(p => p.id === selectedPackage);
+      if (pkg) {
+        localStorage.setItem('selectedPackage', JSON.stringify({
+          cp: pkg.cp + pkg.bonus,
+          price: pkg.price.toFixed(2),
+          bonus: pkg.bonus,
+          paymentMethod: selectedPayment
+        }));
+        navigate('/checkout');
+      }
     }
   };
 
