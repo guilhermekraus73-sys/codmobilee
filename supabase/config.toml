@@ -2,3 +2,6 @@ project_id = "vepiybjuqvvpeyxaycst"
 
 [functions.create-checkout]
 verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = false
