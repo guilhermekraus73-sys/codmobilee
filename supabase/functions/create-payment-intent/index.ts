@@ -11,10 +11,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-PAYMENT-INTENT] ${step}${detailsStr}`);
 };
 
+// Preços em centavos USD
 const PRODUCTS: Record<string, { name: string; price: number; cp: number }> = {
-  'cp-80': { name: '80 CP', price: 1500, cp: 80 },
-  'cp-400': { name: '400 CP', price: 6500, cp: 400 },
-  'cp-800': { name: '800 CP', price: 12000, cp: 800 },
+  'cp-800': { name: '800 CP + 600 Bonus', price: 900, cp: 1400 },    // $9.00 USD (checkout1)
+  'cp-1600': { name: '1600 CP + 1200 Bonus', price: 1590, cp: 2800 }, // $15.90 USD (checkout2)
+  'cp-4000': { name: '4000 CP + 1500 Bonus', price: 1990, cp: 5500 }, // $19.90 USD (checkout3)
 };
 
 serve(async (req) => {
@@ -57,7 +58,7 @@ serve(async (req) => {
     // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: product.price,
-      currency: "cop",
+      currency: "usd",
       customer: customerId,
       metadata: {
         packageId,
