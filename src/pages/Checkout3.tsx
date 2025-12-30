@@ -1,9 +1,51 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clock, Lock, CreditCard } from 'lucide-react';
+import { Clock, Lock } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
+
+const getCardBrand = (cardNumber: string) => {
+  const cleanedNumber = cardNumber.replace(/\s/g, '');
+  
+  if (/^4/.test(cleanedNumber)) return 'visa';
+  if (/^5[1-5]/.test(cleanedNumber) || /^2[2-7]/.test(cleanedNumber)) return 'mastercard';
+  if (/^3[47]/.test(cleanedNumber)) return 'amex';
+  if (/^6(?:011|5)/.test(cleanedNumber)) return 'discover';
+  if (/^(?:2131|1800|35)/.test(cleanedNumber)) return 'jcb';
+  if (/^3(?:0[0-5]|[68])/.test(cleanedNumber)) return 'diners';
+  if (/^62/.test(cleanedNumber)) return 'unionpay';
+  if (/^50|^5[6-9]|^6[0-9]/.test(cleanedNumber)) return 'elo';
+  
+  return null;
+};
+
+const CardBrandIcon = ({ brand }: { brand: string | null }) => {
+  if (!brand) return null;
+  
+  const brands: Record<string, { color: string; label: string }> = {
+    visa: { color: '#1A1F71', label: 'VISA' },
+    mastercard: { color: '#EB001B', label: 'MC' },
+    amex: { color: '#006FCF', label: 'AMEX' },
+    discover: { color: '#FF6600', label: 'DISC' },
+    jcb: { color: '#0E4C96', label: 'JCB' },
+    diners: { color: '#004A97', label: 'DINERS' },
+    unionpay: { color: '#E21836', label: 'UP' },
+    elo: { color: '#FFCB05', label: 'ELO' },
+  };
+  
+  const brandInfo = brands[brand];
+  if (!brandInfo) return null;
+  
+  return (
+    <span 
+      className="text-xs font-bold px-2 py-1 rounded"
+      style={{ backgroundColor: brandInfo.color, color: brand === 'elo' ? '#000' : '#fff' }}
+    >
+      {brandInfo.label}
+    </span>
+  );
+};
 
 const Checkout3 = () => {
   const [timeLeft, setTimeLeft] = useState({ minutes: 9, seconds: 59 });
@@ -23,7 +65,7 @@ const Checkout3 = () => {
     price: '19.90'
   };
 
-  const playerId = localStorage.getItem('playerId') || localStorage.getItem('codm_player_id') || '';
+  const cardBrand = getCardBrand(formData.cardNumber);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -115,15 +157,6 @@ const Checkout3 = () => {
             </div>
           </div>
 
-          {/* Player ID Display */}
-          {playerId && (
-            <div className="mb-6 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">ID del Jugador:</span> {playerId}
-              </p>
-            </div>
-          )}
-
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -197,15 +230,17 @@ const Checkout3 = () => {
                 Número de tarjeta
               </label>
               <div className="relative">
-                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
                   type="text"
                   name="cardNumber"
                   placeholder="1234 1234 1234 1234"
                   value={formData.cardNumber}
                   onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12 pl-10 text-gray-900"
+                  className="bg-gray-50 border-gray-200 h-12 pr-16 text-gray-900"
                 />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <CardBrandIcon brand={cardBrand} />
+                </div>
               </div>
             </div>
 
