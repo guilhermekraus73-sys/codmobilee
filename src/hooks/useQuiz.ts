@@ -55,7 +55,7 @@ export const useQuiz = () => {
       };
     });
 
-    // Auto advance after delay
+    // Auto advance after delay - optimized for speed
     setTimeout(() => {
       if (isLastQuestion) {
         setQuizState('result');
@@ -67,7 +67,7 @@ export const useQuiz = () => {
           showFeedback: false
         }));
       }
-    }, 1500);
+    }, 800);
   }, [progress.selectedAnswer, progress.showFeedback, progress.currentQuestionIndex]);
 
   const calculateScore = useCallback(() => {
