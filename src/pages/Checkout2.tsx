@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Clock, Lock, CreditCard } from 'lucide-react';
-import cpCoin from '@/assets/cp-coin.png';
+import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 
 const Checkout2 = () => {
@@ -61,9 +61,11 @@ const Checkout2 = () => {
     }
   };
 
+  const stripePaymentLink = 'https://buy.stripe.com/5kQ8wOag10lq48m9ExfQI05';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Payment submitted:', formData);
+    window.open(stripePaymentLink, '_blank');
   };
 
   return (
@@ -97,8 +99,8 @@ const Checkout2 = () => {
         <div className="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-6">
           {/* Product Summary */}
           <div className="flex items-start gap-4 mb-6 pb-6 border-b border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <img src={cpCoin} alt="CP" className="w-10 h-10" />
+            <div className="w-14 h-14 rounded-lg flex items-center justify-center overflow-hidden">
+              <img src={cpCoinsGold} alt="CP" className="w-full h-full object-cover" />
             </div>
             <div>
               <h2 className="font-semibold text-gray-800 text-lg">
