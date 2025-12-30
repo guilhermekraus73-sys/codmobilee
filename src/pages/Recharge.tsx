@@ -13,6 +13,7 @@ import paymentEfecty from '@/assets/payment-efecty.svg';
 import paymentBancolombia from '@/assets/payment-bancolombia.png';
 import paymentPaypal from '@/assets/payment-paypal.png';
 import paymentPse from '@/assets/payment-pse.png';
+import { initUTMTracking, trackPageView } from '@/lib/utmify';
 
 interface CpPackage {
   id: number;
@@ -52,6 +53,10 @@ const Recharge = () => {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
 
   useEffect(() => {
+    // Initialize UTM tracking
+    initUTMTracking();
+    trackPageView('recharge');
+    
     const storedId = localStorage.getItem('codm_player_id');
     if (!storedId) {
       navigate('/identificar');
