@@ -136,7 +136,7 @@ const Checkout2 = () => {
                 placeholder="Ingresa tu correo para recibir la compra"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12"
+                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
                 required
               />
             </div>
@@ -151,7 +151,7 @@ const Checkout2 = () => {
                 placeholder="Ingresa tu nombre completo"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12"
+                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
                 required
               />
             </div>
@@ -188,7 +188,7 @@ const Checkout2 = () => {
                 placeholder="Como aparece en la tarjeta"
                 value={formData.cardName}
                 onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12"
+                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
               />
             </div>
 
@@ -204,7 +204,7 @@ const Checkout2 = () => {
                   placeholder="1234 1234 1234 1234"
                   value={formData.cardNumber}
                   onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12 pl-10"
+                  className="bg-gray-50 border-gray-200 h-12 pl-10 text-gray-900"
                 />
               </div>
             </div>
@@ -220,7 +220,7 @@ const Checkout2 = () => {
                   placeholder="MM/AA"
                   value={formData.expiry}
                   onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12"
+                  className="bg-gray-50 border-gray-200 h-12 text-gray-900"
                 />
               </div>
               <div>
@@ -233,7 +233,7 @@ const Checkout2 = () => {
                   placeholder="CVC"
                   value={formData.cvv}
                   onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12"
+                  className="bg-gray-50 border-gray-200 h-12 text-gray-900"
                 />
               </div>
             </div>
