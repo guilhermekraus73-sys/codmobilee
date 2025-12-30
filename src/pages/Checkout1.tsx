@@ -20,7 +20,7 @@ const Checkout1 = () => {
     cp: 800,
     bonus: 600,
     total: 1400,
-    price: '9.90'
+    price: '9.00'
   };
 
   const playerId = localStorage.getItem('playerId') || localStorage.getItem('codm_player_id') || '';
