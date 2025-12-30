@@ -1,11 +1,20 @@
 import { Trophy, Target, Crosshair, Shield } from 'lucide-react';
+import { useEffect, memo } from 'react';
 import codmHero from '@/assets/codm-hero.jpg';
+import { codmQuestions } from '@/data/questions';
+import { preloadImages } from '@/hooks/useImagePreloader';
 
 interface QuizIntroProps {
   onStart: () => void;
 }
 
-const QuizIntro = ({ onStart }: QuizIntroProps) => {
+const QuizIntro = memo(({ onStart }: QuizIntroProps) => {
+  // Preload all quiz images when intro loads
+  useEffect(() => {
+    const quizImages = codmQuestions.map(q => q.image);
+    preloadImages(quizImages).catch(console.error);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
@@ -14,6 +23,9 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
           src={codmHero} 
           alt="Call of Duty Mobile" 
           className="w-full h-full object-cover object-top"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
       </div>
@@ -90,6 +102,8 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
       </div>
     </div>
   );
-};
+});
+
+QuizIntro.displayName = 'QuizIntro';
 
 export default QuizIntro;

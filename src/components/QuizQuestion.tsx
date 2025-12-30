@@ -1,6 +1,7 @@
-import { Question } from '@/data/questions';
+import { Question, codmQuestions } from '@/data/questions';
 import { Check, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { memo, useMemo } from 'react';
 
 interface QuizQuestionProps {
   question: Question;
@@ -12,7 +13,7 @@ interface QuizQuestionProps {
   onConfirm: () => void;
 }
 
-const QuizQuestion = ({
+const QuizQuestion = memo(({
   question,
   currentIndex,
   totalQuestions,
@@ -53,7 +54,17 @@ const QuizQuestion = ({
                 src={question.image} 
                 alt={`Imagen de la pregunta ${currentIndex + 1}`}
                 className="w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
               />
+              {/* Preload next image */}
+              {currentIndex < totalQuestions - 1 && (
+                <link 
+                  rel="preload" 
+                  as="image" 
+                  href={codmQuestions[currentIndex + 1]?.image} 
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-cod-dark/90 via-cod-dark/30 to-transparent" />
             </div>
 
@@ -154,6 +165,8 @@ const QuizQuestion = ({
       </div>
     </div>
   );
-};
+});
+
+QuizQuestion.displayName = 'QuizQuestion';
 
 export default QuizQuestion;
