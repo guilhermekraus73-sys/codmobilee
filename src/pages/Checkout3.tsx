@@ -119,7 +119,10 @@ const CheckoutForm = () => {
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        navigate('/success');
+        // Save price for tracking on success page
+        sessionStorage.setItem('checkout_price', packageData.price);
+        sessionStorage.setItem('checkout_package', packageData.id);
+        navigate(`/success?session_id=${paymentIntent.id}`);
       }
     } catch (err) {
       console.error('Payment error:', err);
