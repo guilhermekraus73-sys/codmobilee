@@ -2,15 +2,49 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 import codmBanner from '@/assets/codm-banner.png';
 import codmIcon from '@/assets/codm-icon.png';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
 import cpCoin from '@/assets/cp-coin.png';
+import cpCoinsStack from '@/assets/cp-coins-new.png';
+import paymentNequi from '@/assets/payment-nequi.png';
+import paymentYape from '@/assets/payment-yape.png';
+import paymentMercadopago from '@/assets/payment-mercadopago.png';
+import paymentEfecty from '@/assets/payment-efecty.svg';
+import paymentBancolombia from '@/assets/payment-bancolombia.png';
+import paymentPaypal from '@/assets/payment-paypal.png';
+import paymentPse from '@/assets/payment-pse.png';
+import { useImagePreloader, preloadNextPageImages } from '@/hooks/useImagePreloader';
+
+// All images for this page + next page (Recharge)
+const pageImages = [
+  codmBanner,
+  codmIcon,
+  codmHeroBanner,
+  cpCoin,
+];
+
+const nextPageImages = [
+  cpCoinsStack,
+  paymentNequi,
+  paymentYape,
+  paymentMercadopago,
+  paymentEfecty,
+  paymentBancolombia,
+  paymentPaypal,
+  paymentPse,
+];
 
 const Identificar = () => {
   const [playerId, setPlayerId] = useState('');
   const navigate = useNavigate();
+  const { isLoading, isReady } = useImagePreloader(pageImages, true);
+
+  // Preload next page images when this page is ready
+  if (isReady) {
+    preloadNextPageImages(nextPageImages);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,6 +53,17 @@ const Identificar = () => {
       navigate('/recharge');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-gray-400 text-sm">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
