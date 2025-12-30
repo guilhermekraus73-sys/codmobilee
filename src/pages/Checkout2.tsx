@@ -7,12 +7,20 @@ import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
 import { supabase } from '@/integrations/supabase/client';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { loadStripe, PaymentRequest } from '@stripe/stripe-js';
+import { 
+  Elements, 
+  CardNumberElement, 
+  CardExpiryElement, 
+  CardCvcElement, 
+  PaymentRequestButtonElement,
+  useStripe, 
+  useElements 
+} from '@stripe/react-stripe-js';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const cardElementOptions = {
+const cardElementStyles = {
   style: {
     base: {
       fontSize: '16px',
@@ -40,6 +48,7 @@ const CheckoutForm = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
 
   const packageData = {
     id: 'cp-1600',
@@ -48,6 +57,75 @@ const CheckoutForm = () => {
     total: 2800,
     price: '15.90'
   };
+
+  // Setup Payment Request (Apple Pay / Google Pay)
+  useEffect(() => {
+    if (!stripe) return;
+
+    const pr = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: {
+        label: `${packageData.cp} CP + ${packageData.bonus} Bonus`,
+        amount: Math.round(parseFloat(packageData.price) * 100),
+      },
+      requestPayerName: true,
+      requestPayerEmail: true,
+    });
+
+    pr.canMakePayment().then((result) => {
+      if (result) {
+        setPaymentRequest(pr);
+      }
+    });
+
+    pr.on('paymentmethod', async (event) => {
+      try {
+        const utmData = getUTMDataForConversion();
+        
+        const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
+          body: {
+            packageId: packageData.id,
+            email: event.payerEmail || formData.email,
+            utmData,
+          },
+        });
+
+        if (fnError || !data?.clientSecret) {
+          event.complete('fail');
+          return;
+        }
+
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          data.clientSecret,
+          { payment_method: event.paymentMethod.id },
+          { handleActions: false }
+        );
+
+        if (confirmError) {
+          event.complete('fail');
+          return;
+        }
+
+        event.complete('success');
+
+        if (paymentIntent?.status === 'requires_action') {
+          const { error: actionError } = await stripe.confirmCardPayment(data.clientSecret);
+          if (actionError) {
+            setError(actionError.message || 'Error al procesar el pago');
+            return;
+          }
+        }
+
+        sessionStorage.setItem('checkout_price', packageData.price);
+        sessionStorage.setItem('checkout_package', packageData.id);
+        navigate(`/success?session_id=${paymentIntent?.id}`);
+      } catch (err) {
+        event.complete('fail');
+        console.error('Payment error:', err);
+      }
+    });
+  }, [stripe, formData.email, navigate]);
 
   useEffect(() => {
     initUTMTracking();
@@ -88,7 +166,6 @@ const CheckoutForm = () => {
     try {
       const utmData = getUTMDataForConversion();
       
-      // Create Payment Intent
       const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           packageId: packageData.id,
@@ -100,13 +177,12 @@ const CheckoutForm = () => {
       if (fnError) throw fnError;
       if (!data?.clientSecret) throw new Error('No se pudo crear el pago');
 
-      // Confirm payment with card
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error('Error con el formulario de pago');
+      const cardNumber = elements.getElement(CardNumberElement);
+      if (!cardNumber) throw new Error('Error con el formulario de pago');
 
       const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: {
-          card: cardElement,
+          card: cardNumber,
           billing_details: {
             name: formData.fullName,
             email: formData.email,
@@ -119,7 +195,6 @@ const CheckoutForm = () => {
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        // Save price for tracking on success page
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
         navigate(`/success?session_id=${paymentIntent.id}`);
@@ -173,7 +248,7 @@ const CheckoutForm = () => {
                 {packageData.cp} CP + {packageData.bonus} Bonus
               </p>
               <p className="text-green-500 font-bold text-lg mt-1">
-                Total: $ {packageData.price} USD
+                Total: ${packageData.price} USD
               </p>
             </div>
           </div>
@@ -210,12 +285,74 @@ const CheckoutForm = () => {
               />
             </div>
 
+            {/* Apple Pay / Google Pay Button */}
+            {paymentRequest && (
+              <>
+                <div className="pt-2">
+                  <PaymentRequestButtonElement 
+                    options={{ 
+                      paymentRequest,
+                      style: {
+                        paymentRequestButton: {
+                          type: 'default',
+                          theme: 'dark',
+                          height: '48px',
+                        },
+                      },
+                    }} 
+                  />
+                </div>
+                
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-gray-200"></div>
+                  <span className="flex-shrink mx-4 text-gray-400 text-sm">o pagar con tarjeta</span>
+                  <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+              </>
+            )}
+
+            {/* Card Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Datos de la tarjeta
+                Nombre en la tarjeta
               </label>
-              <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-                <CardElement options={cardElementOptions} />
+              <Input
+                type="text"
+                name="cardName"
+                placeholder="Como aparece en la tarjeta"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
+              />
+            </div>
+
+            {/* Card Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Número de tarjeta
+              </label>
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-4 h-12 flex items-center">
+                <CardNumberElement options={cardElementStyles} className="w-full" />
+              </div>
+            </div>
+
+            {/* Expiry and CVV */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Vencimiento
+                </label>
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4 h-12 flex items-center">
+                  <CardExpiryElement options={cardElementStyles} className="w-full" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  CVV
+                </label>
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4 h-12 flex items-center">
+                  <CardCvcElement options={cardElementStyles} className="w-full" />
+                </div>
               </div>
             </div>
 
