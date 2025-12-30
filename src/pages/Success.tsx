@@ -88,10 +88,6 @@ const Success = () => {
               <span className="text-gray-400">Estado</span>
               <span className="text-green-500 font-semibold">Completado</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Tiempo de entrega</span>
-              <span className="text-white">5-15 minutos</span>
-            </div>
             {sessionId && (
               <div className="flex justify-between">
                 <span className="text-gray-400">ID de transacción</span>
