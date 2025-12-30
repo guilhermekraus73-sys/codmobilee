@@ -1,77 +1,55 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Clock, Lock, Loader2 } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
-import PaymentButton from '@/components/PaymentButton';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
 import { supabase } from '@/integrations/supabase/client';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-const getCardBrand = (cardNumber: string) => {
-  const cleanedNumber = cardNumber.replace(/\s/g, '');
-  
-  if (/^4/.test(cleanedNumber)) return 'visa';
-  if (/^5[1-5]/.test(cleanedNumber) || /^2[2-7]/.test(cleanedNumber)) return 'mastercard';
-  if (/^3[47]/.test(cleanedNumber)) return 'amex';
-  if (/^6(?:011|5)/.test(cleanedNumber)) return 'discover';
-  if (/^(?:2131|1800|35)/.test(cleanedNumber)) return 'jcb';
-  if (/^3(?:0[0-5]|[68])/.test(cleanedNumber)) return 'diners';
-  if (/^62/.test(cleanedNumber)) return 'unionpay';
-  if (/^50|^5[6-9]|^6[0-9]/.test(cleanedNumber)) return 'elo';
-  
-  return null;
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+const cardElementOptions = {
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#1f2937',
+      '::placeholder': {
+        color: '#9ca3af',
+      },
+      fontFamily: 'system-ui, sans-serif',
+    },
+    invalid: {
+      color: '#ef4444',
+    },
+  },
 };
 
-const CardBrandIcon = ({ brand }: { brand: string | null }) => {
-  if (!brand) return null;
+const CheckoutForm = () => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const navigate = useNavigate();
   
-  const brands: Record<string, { color: string; label: string }> = {
-    visa: { color: '#1A1F71', label: 'VISA' },
-    mastercard: { color: '#EB001B', label: 'MC' },
-    amex: { color: '#006FCF', label: 'AMEX' },
-    discover: { color: '#FF6600', label: 'DISC' },
-    jcb: { color: '#0E4C96', label: 'JCB' },
-    diners: { color: '#004A97', label: 'DINERS' },
-    unionpay: { color: '#E21836', label: 'UP' },
-    elo: { color: '#FFCB05', label: 'ELO' },
-  };
-  
-  const brandInfo = brands[brand];
-  if (!brandInfo) return null;
-  
-  return (
-    <span 
-      className="text-xs font-bold px-2 py-1 rounded"
-      style={{ backgroundColor: brandInfo.color, color: brand === 'elo' ? '#000' : '#fff' }}
-    >
-      {brandInfo.label}
-    </span>
-  );
-};
-
-const Checkout2 = () => {
   const [timeLeft, setTimeLeft] = useState({ minutes: 9, seconds: 59 });
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
-    cardName: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const packageData = {
+    id: 'cp-1600',
     cp: 1600,
     bonus: 1200,
     total: 2800,
     price: '15.90'
   };
 
-  const cardBrand = getCardBrand(formData.cardNumber);
-
   useEffect(() => {
-    // Initialize UTM tracking and track checkout
     initUTMTracking();
     trackPageView('checkout2');
     trackInitiateCheckout(parseFloat(packageData.price), 'USD');
@@ -94,47 +72,58 @@ const Checkout2 = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    if (name === 'cardNumber') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 16);
-      const formatted = cleaned.replace(/(\d{4})/g, '$1 ').trim();
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    } else if (name === 'expiry') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 4);
-      const formatted = cleaned.length > 2 ? `${cleaned.slice(0, 2)}/${cleaned.slice(2)}` : cleaned;
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    } else if (name === 'cvv') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 4);
-      setFormData(prev => ({ ...prev, [name]: cleaned }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
     try {
       const utmData = getUTMDataForConversion();
       
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      // Create Payment Intent
+      const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
         body: {
-          packageId: 2,
+          packageId: packageData.id,
           email: formData.email,
           utmData,
         },
       });
 
-      if (error) throw error;
-      
-      if (data?.url) {
-        window.location.href = data.url;
+      if (fnError) throw fnError;
+      if (!data?.clientSecret) throw new Error('No se pudo crear el pago');
+
+      // Confirm payment with card
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error('Error con el formulario de pago');
+
+      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: formData.fullName,
+            email: formData.email,
+          },
+        },
+      });
+
+      if (paymentError) {
+        throw new Error(paymentError.message);
       }
-    } catch (error) {
-      console.error('Checkout error:', error);
+
+      if (paymentIntent?.status === 'succeeded') {
+        navigate('/success');
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      setError(err instanceof Error ? err.message : 'Error al procesar el pago');
       setIsLoading(false);
     }
   };
@@ -218,78 +207,20 @@ const Checkout2 = () => {
               />
             </div>
 
-            <PaymentButton />
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">o pagar con tarjeta</span>
-              </div>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Nombre en la tarjeta
+                Datos de la tarjeta
               </label>
-              <Input
-                type="text"
-                name="cardName"
-                placeholder="Como aparece en la tarjeta"
-                value={formData.cardName}
-                onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Número de tarjeta
-              </label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  name="cardNumber"
-                  placeholder="1234 1234 1234 1234"
-                  value={formData.cardNumber}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12 pr-16 text-gray-900"
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <CardBrandIcon brand={cardBrand} />
-                </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                <CardElement options={cardElementOptions} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Vencimiento
-                </label>
-                <Input
-                  type="text"
-                  name="expiry"
-                  placeholder="MM/AA"
-                  value={formData.expiry}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12 text-gray-900"
-                />
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                {error}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  CVV
-                </label>
-                <Input
-                  type="text"
-                  name="cvv"
-                  placeholder="CVC"
-                  value={formData.cvv}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12 text-gray-900"
-                />
-              </div>
-            </div>
+            )}
 
             <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
               <Lock className="w-4 h-4" />
@@ -298,7 +229,7 @@ const Checkout2 = () => {
 
             <Button 
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !stripe}
               className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-lg flex items-center justify-center gap-2 disabled:opacity-70"
             >
               {isLoading ? (
@@ -317,6 +248,14 @@ const Checkout2 = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const Checkout2 = () => {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
   );
 };
 
