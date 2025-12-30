@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Check, CreditCard } from 'lucide-react';
+import { Check, CreditCard, Loader2 } from 'lucide-react';
 import codmBanner from '@/assets/codm-banner.png';
 import codmIcon from '@/assets/codm-icon.png';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
@@ -13,7 +13,31 @@ import paymentEfecty from '@/assets/payment-efecty.svg';
 import paymentBancolombia from '@/assets/payment-bancolombia.png';
 import paymentPaypal from '@/assets/payment-paypal.png';
 import paymentPse from '@/assets/payment-pse.png';
+import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
+import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import { initUTMTracking, trackPageView } from '@/lib/utmify';
+import { useImagePreloader, preloadNextPageImages } from '@/hooks/useImagePreloader';
+
+// All images for this page
+const pageImages = [
+  codmBanner,
+  codmIcon,
+  codmHeroBanner,
+  cpCoinsStack,
+  paymentNequi,
+  paymentYape,
+  paymentMercadopago,
+  paymentEfecty,
+  paymentBancolombia,
+  paymentPaypal,
+  paymentPse,
+];
+
+// Next page images (checkout)
+const checkoutImages = [
+  codmCheckoutBanner,
+  cpCoinsGold,
+];
 
 interface CpPackage {
   id: number;
@@ -51,6 +75,12 @@ const Recharge = () => {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const { isLoading, isReady } = useImagePreloader(pageImages, true);
+
+  // Preload checkout images when ready
+  if (isReady) {
+    preloadNextPageImages(checkoutImages);
+  }
 
   useEffect(() => {
     // Initialize UTM tracking
@@ -73,7 +103,16 @@ const Recharge = () => {
     }
   };
 
-  if (!playerId) return null;
+  if (!playerId || isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-gray-400 text-sm">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">

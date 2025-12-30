@@ -1,19 +1,48 @@
-import { Trophy, Target, Crosshair, Shield } from 'lucide-react';
-import { useEffect, memo } from 'react';
+import { Trophy, Target, Crosshair, Shield, Loader2 } from 'lucide-react';
+import { useEffect, useState, memo } from 'react';
 import codmHero from '@/assets/codm-hero.jpg';
+import codmBanner from '@/assets/codm-banner.png';
+import codmIcon from '@/assets/codm-icon.png';
+import codmHeroBanner from '@/assets/codm-hero-banner.png';
+import cpCoin from '@/assets/cp-coin.png';
 import { codmQuestions } from '@/data/questions';
-import { preloadImages } from '@/hooks/useImagePreloader';
+import { useImagePreloader, preloadNextPageImages } from '@/hooks/useImagePreloader';
 
 interface QuizIntroProps {
   onStart: () => void;
 }
 
+// All quiz images to preload
+const quizImages = codmQuestions.map(q => q.image);
+
+// Next page images (Identificar)
+const nextPageImages = [
+  codmBanner,
+  codmIcon,
+  codmHeroBanner,
+  cpCoin,
+];
+
 const QuizIntro = memo(({ onStart }: QuizIntroProps) => {
-  // Preload all quiz images when intro loads
+  const { isLoading, isReady } = useImagePreloader([codmHero, ...quizImages], true);
+
+  // Preload next page images when quiz images are ready
   useEffect(() => {
-    const quizImages = codmQuestions.map(q => q.image);
-    preloadImages(quizImages).catch(console.error);
-  }, []);
+    if (isReady) {
+      preloadNextPageImages(nextPageImages);
+    }
+  }, [isReady]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm">Cargando quiz...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
