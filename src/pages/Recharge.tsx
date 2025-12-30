@@ -60,6 +60,8 @@ const Recharge = () => {
     }
   }, [navigate]);
 
+  const selectedPkg = selectedPackage ? cpPackages.find(p => p.id === selectedPackage) : null;
+
   const handleContinue = () => {
     if (selectedPackage && selectedPayment) {
       navigate(`/checkout${selectedPackage}`);
@@ -231,6 +233,15 @@ const Recharge = () => {
             ))}
           </div>
         </div>
+
+        {/* Total Summary */}
+        {selectedPkg && (
+          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+            <p className="text-center text-gray-700">
+              Total: <span className="text-primary font-bold">US$ {selectedPkg.price.toFixed(2)}</span> por <span className="font-bold text-gray-900">{(selectedPkg.cp + selectedPkg.bonus).toLocaleString()} CP</span>
+            </p>
+          </div>
+        )}
 
         {/* Continue Button */}
         <Button 
