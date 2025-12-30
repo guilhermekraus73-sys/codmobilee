@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clock, Lock } from 'lucide-react';
+import { Clock, Lock, Loader2 } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import PaymentButton from '@/components/PaymentButton';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
+import { supabase } from '@/integrations/supabase/client';
 
 const getCardBrand = (cardNumber: string) => {
   const cleanedNumber = cardNumber.replace(/\s/g, '');
@@ -110,11 +111,32 @@ const Checkout1 = () => {
     }
   };
 
-  const stripePaymentLink = 'https://buy.stripe.com/cNi3cufAl3xC8oCdUNfQI04';
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    window.open(stripePaymentLink, '_blank');
+    setIsLoading(true);
+    
+    try {
+      const utmData = getUTMDataForConversion();
+      
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          packageId: 1,
+          email: formData.email,
+          utmData,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -276,10 +298,20 @@ const Checkout1 = () => {
 
             <Button 
               type="submit"
-              className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-lg flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-lg flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              <Lock className="w-5 h-5" />
-              PAGAR ${packageData.price} USD
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-5 h-5" />
+                  PAGAR ${packageData.price} USD
+                </>
+              )}
             </Button>
           </form>
         </div>
