@@ -126,16 +126,70 @@ export const getUTMDataForConversion = (): UTMData | null => {
 export const trackPageView = (pageName?: string): void => {
   const utmData = getStoredUTMData();
   console.log('[Utmify] PageView:', { page: pageName || window.location.pathname, ...utmData });
+  
+  // Dispatch event for UTMify pixel
+  if (typeof window !== 'undefined' && (window as any).utmify) {
+    (window as any).utmify.track('PageView');
+  }
 };
 
 // Track initiate checkout event
 export const trackInitiateCheckout = (value?: number, currency?: string): void => {
   const utmData = getStoredUTMData();
   console.log('[Utmify] InitiateCheckout:', { value, currency, ...utmData });
+  
+  // Dispatch event for UTMify pixel
+  if (typeof window !== 'undefined' && (window as any).utmify) {
+    (window as any).utmify.track('InitiateCheckout', { value, currency });
+  }
 };
 
-// Track purchase event
+// Track purchase event - THIS IS CRITICAL FOR SALES TRACKING
 export const trackPurchase = (orderId: string, value: number, currency?: string): void => {
   const utmData = getStoredUTMData();
   console.log('[Utmify] Purchase:', { orderId, value, currency, ...utmData });
+  
+  // Dispatch Purchase event for UTMify pixel
+  if (typeof window !== 'undefined') {
+    // Method 1: Using utmify global object
+    if ((window as any).utmify) {
+      (window as any).utmify.track('Purchase', { 
+        value, 
+        currency: currency || 'USD',
+        order_id: orderId 
+      });
+    }
+    
+    // Method 2: Dispatch custom event that UTMify pixel listens to
+    window.dispatchEvent(new CustomEvent('utmify:purchase', {
+      detail: {
+        value,
+        currency: currency || 'USD',
+        order_id: orderId,
+        ...utmData
+      }
+    }));
+    
+    // Method 3: Direct pixel tracking via dataLayer (if available)
+    if ((window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'purchase',
+        ecommerce: {
+          transaction_id: orderId,
+          value: value,
+          currency: currency || 'USD'
+        }
+      });
+    }
+  }
+};
+
+// Track AddToCart event
+export const trackAddToCart = (value?: number, currency?: string, productId?: string): void => {
+  const utmData = getStoredUTMData();
+  console.log('[Utmify] AddToCart:', { value, currency, productId, ...utmData });
+  
+  if (typeof window !== 'undefined' && (window as any).utmify) {
+    (window as any).utmify.track('AddToCart', { value, currency, product_id: productId });
+  }
 };
