@@ -1,5 +1,6 @@
 import { Trophy, RefreshCw, Percent, Target, XCircle, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 interface QuizResultProps {
   score: {
@@ -88,15 +89,15 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
               <p className="text-sm text-muted-foreground mb-4">
                 en paquetes de CP (COD Points)
               </p>
-              <a 
-                href="#" 
+              <Link 
+                to="/identificar" 
                 className="btn-tactical inline-flex items-center gap-2 px-6 py-3 rounded-lg"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Canjear Premio
                   <ExternalLink className="w-4 h-4" />
                 </span>
-              </a>
+              </Link>
             </div>
           )}
 
