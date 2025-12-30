@@ -76,18 +76,11 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
             </div>
           </div>
 
-          {/* Prize Section */}
+{/* Prize Section */}
           {isWinner && (
             <div className="bg-primary/10 border border-primary/30 rounded-xl p-6 mb-6 animate-pulse-gold">
-              <Trophy className="w-10 h-10 text-primary mx-auto mb-3" />
-              <h3 className="font-display text-xl font-bold text-primary mb-2">
-                ¡Has Desbloqueado!
-              </h3>
-              <p className="text-3xl font-display font-bold text-gradient-gold mb-2">
-                70% OFF
-              </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                en paquetes de CP (COD Points)
+              <p className="text-sm text-cod-text leading-relaxed mb-4">
+                ¡Felicidades por haber acertado más del 70% de todo el quiz! Esto demuestra que eres realmente un súper jugador de Call of Duty Mobile, por eso liberamos nuestros paquetes de CP más vendidos con <span className="text-primary font-bold">70% de descuento</span>. ¡Garantiza ahora más de <span className="text-primary font-bold">5000 CP</span> prácticamente gratis!
               </p>
               <Link 
                 to="/identificar" 
