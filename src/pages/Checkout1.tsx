@@ -58,6 +58,12 @@ const CheckoutForm = () => {
     price: '9.00'
   };
 
+  // Log Stripe loading for debugging
+  useEffect(() => {
+    console.log('[Checkout1] Stripe loaded:', !!stripe);
+    console.log('[Checkout1] Elements loaded:', !!elements);
+  }, [stripe, elements]);
+
   // Setup Payment Request (Apple Pay / Google Pay)
   useEffect(() => {
     if (!stripe) return;
@@ -166,6 +172,8 @@ const CheckoutForm = () => {
     try {
       const utmData = getUTMDataForConversion();
       
+      console.log('[Checkout1] Creating payment intent...', { packageId: packageData.id, email: formData.email });
+      
       const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           packageId: packageData.id,
@@ -174,8 +182,16 @@ const CheckoutForm = () => {
         },
       });
 
-      if (fnError) throw fnError;
-      if (!data?.clientSecret) throw new Error('No se pudo crear el pago');
+      console.log('[Checkout1] Payment intent response:', { data, error: fnError });
+
+      if (fnError) {
+        console.error('[Checkout1] Function error:', fnError);
+        throw new Error(fnError.message || 'Error al crear el pago');
+      }
+      if (!data?.clientSecret) {
+        console.error('[Checkout1] No client secret in response:', data);
+        throw new Error(data?.error || 'No se pudo crear el pago');
+      }
 
       const cardNumber = elements.getElement(CardNumberElement);
       if (!cardNumber) throw new Error('Error con el formulario de pago');
