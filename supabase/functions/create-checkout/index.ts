@@ -53,7 +53,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://lovable.dev";
     logStep("Origin", { origin });
 
-    // Create checkout session
+    // Create checkout session with metadata on payment_intent
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -74,16 +74,20 @@ serve(async (req) => {
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout${packageId}`,
       customer_email: email || undefined,
-      metadata: {
-        package_id: String(packageId),
-        cp_amount: String(product.cp),
-        utm_source: utmData?.utm_source || "",
-        utm_medium: utmData?.utm_medium || "",
-        utm_campaign: utmData?.utm_campaign || "",
-        utm_content: utmData?.utm_content || "",
-        utm_term: utmData?.utm_term || "",
-        fbclid: utmData?.fbclid || "",
-        gclid: utmData?.gclid || "",
+      // IMPORTANT: Use payment_intent_data.metadata to pass data to webhook
+      payment_intent_data: {
+        metadata: {
+          packageId: String(packageId),
+          cpAmount: String(product.cp),
+          email: email || "",
+          utm_source: utmData?.utm_source || "",
+          utm_medium: utmData?.utm_medium || "",
+          utm_campaign: utmData?.utm_campaign || "",
+          utm_content: utmData?.utm_content || "",
+          utm_term: utmData?.utm_term || "",
+          fbclid: utmData?.fbclid || "",
+          gclid: utmData?.gclid || "",
+        },
       },
     });
 
