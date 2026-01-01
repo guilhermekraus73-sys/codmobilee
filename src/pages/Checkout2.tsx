@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clock, Lock, Loader2 } from 'lucide-react';
+import { Clock, Lock, Loader2, CreditCard } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
@@ -332,49 +332,62 @@ const CheckoutForm = () => {
               </>
             )}
 
-            {/* Card Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Nombre en la tarjeta
-              </label>
-              <Input
-                type="text"
-                name="cardName"
-                placeholder="Como aparece en la tarjeta"
-                value={formData.fullName}
-                onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
-              />
-            </div>
-
-            {/* Card Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Número de tarjeta
-              </label>
-              <div className="bg-gray-50 border border-gray-200 rounded-md p-4 h-12 flex items-center">
-                <CardNumberElement options={cardElementStyles} className="w-full" />
+            {/* Card Payment Section - Highlighted */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2 text-blue-700 font-semibold">
+                <CreditCard className="w-5 h-5" />
+                <span>Datos de tu tarjeta</span>
               </div>
-            </div>
 
-            {/* Expiry and CVV */}
-            <div className="grid grid-cols-2 gap-4">
+              {/* Card Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Vencimiento
+                  Nombre en la tarjeta *
                 </label>
-                <div className="bg-gray-50 border border-gray-200 rounded-md p-4 h-12 flex items-center">
-                  <CardExpiryElement options={cardElementStyles} className="w-full" />
-                </div>
+                <Input
+                  type="text"
+                  name="cardName"
+                  placeholder="Como aparece en la tarjeta"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  className="bg-white border-gray-300 h-12 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
               </div>
+
+              {/* Card Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  CVV
+                  Número de tarjeta *
                 </label>
-                <div className="bg-gray-50 border border-gray-200 rounded-md p-4 h-12 flex items-center">
-                  <CardCvcElement options={cardElementStyles} className="w-full" />
+                <div className="bg-white border-2 border-gray-300 rounded-lg p-3 h-12 flex items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                  <CardNumberElement options={cardElementStyles} className="w-full" />
                 </div>
               </div>
+
+              {/* Expiry and CVV */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Vencimiento *
+                  </label>
+                  <div className="bg-white border-2 border-gray-300 rounded-lg p-3 h-12 flex items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                    <CardExpiryElement options={cardElementStyles} className="w-full" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    CVV *
+                  </label>
+                  <div className="bg-white border-2 border-gray-300 rounded-lg p-3 h-12 flex items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                    <CardCvcElement options={cardElementStyles} className="w-full" />
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 text-center">
+                Acepta Visa, Mastercard, American Express y más
+              </p>
             </div>
 
             {error && (
@@ -383,7 +396,7 @@ const CheckoutForm = () => {
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
+            <div className="flex items-center justify-center gap-2 text-gray-500 text-sm py-2">
               <Lock className="w-4 h-4" />
               <span>Pago 100% seguro con encriptación SSL</span>
             </div>
