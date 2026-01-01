@@ -13,17 +13,50 @@ const logStep = (step: string, details?: any) => {
 
 // UTMify Pixel ID
 const UTMIFY_PIXEL_ID = "69541e567c5e5c96cc8e701a";
+const SOURCE_URL = "https://codpointsmobile.online/success";
 
-// Send Purchase event to UTMify
+// Retry function with exponential backoff
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit, 
+  maxRetries: number = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) {
+        return response;
+      }
+      logStep(`UTMify attempt ${attempt} failed with status ${response.status}`);
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      logStep(`UTMify attempt ${attempt} failed: ${lastError.message}`);
+    }
+    
+    if (attempt < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+    }
+  }
+  
+  throw lastError || new Error('All retry attempts failed');
+}
+
+// Send Purchase event to UTMify with retry
 async function sendPurchaseToUtmify(data: {
   orderId: string;
   value: number;
   currency: string;
   email?: string;
   utmData?: Record<string, string>;
-}) {
+}): Promise<boolean> {
   try {
     const utmifyApiKey = Deno.env.get("UTMIFY_API_KEY");
+    if (!utmifyApiKey) {
+      logStep("WARNING: UTMIFY_API_KEY not set");
+    }
     
     const payload = {
       type: "Purchase",
@@ -33,7 +66,7 @@ async function sendPurchaseToUtmify(data: {
         parameters: data.utmData ? new URLSearchParams(data.utmData).toString() : "",
       },
       event: {
-        sourceUrl: "https://codpointsmobile.online/success",
+        sourceUrl: SOURCE_URL,
         pageTitle: "Compra COD Mobile CP",
         value: data.value,
         currency: data.currency,
@@ -43,21 +76,25 @@ async function sendPurchaseToUtmify(data: {
 
     logStep("Sending to UTMify", payload);
 
-    const response = await fetch("https://tracking.utmify.com.br/tracking/v1/events", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(utmifyApiKey ? { "Authorization": `Bearer ${utmifyApiKey}` } : {}),
+    const response = await fetchWithRetry(
+      "https://tracking.utmify.com.br/tracking/v1/events",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(utmifyApiKey ? { "Authorization": `Bearer ${utmifyApiKey}` } : {}),
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    });
+      3 // Max retries
+    );
 
     const responseData = await response.text();
     logStep("UTMify response", { status: response.status, data: responseData });
 
     return response.ok;
   } catch (error) {
-    logStep("UTMify error", { error: error instanceof Error ? error.message : String(error) });
+    logStep("UTMify error after retries", { error: error instanceof Error ? error.message : String(error) });
     return false;
   }
 }
@@ -132,9 +169,12 @@ serve(async (req) => {
 
       logStep("Processing COD payment");
 
-      // Extract UTM data from metadata
+      // Extract UTM data from metadata - capture all possible params
       const utmData: Record<string, string> = {};
-      const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'ttclid'];
+      const utmKeys = [
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
+        'fbclid', 'gclid', 'ttclid', 'kwai_click_id'
+      ];
       
       for (const key of utmKeys) {
         if (paymentIntent.metadata[key]) {
@@ -142,10 +182,23 @@ serve(async (req) => {
         }
       }
 
-      // Get email from metadata
-      const customerEmail = paymentIntent.metadata.email;
+      // Get email from metadata or customer
+      let customerEmail = paymentIntent.metadata.email;
+      
+      // If no email in metadata, try to get from Stripe customer
+      if (!customerEmail && paymentIntent.customer) {
+        try {
+          const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
+          if (customer && !customer.deleted && 'email' in customer) {
+            customerEmail = customer.email || undefined;
+            logStep("Email retrieved from Stripe customer", { email: customerEmail });
+          }
+        } catch (e) {
+          logStep("Could not retrieve customer email", { error: e instanceof Error ? e.message : String(e) });
+        }
+      }
 
-      // Send to UTMify
+      // Send to UTMify with retry
       const utmifySuccess = await sendPurchaseToUtmify({
         orderId: paymentIntent.id,
         value: paymentIntent.amount / 100, // Convert from cents to dollars
@@ -154,13 +207,14 @@ serve(async (req) => {
         utmData,
       });
 
-      logStep("UTMify tracking result", { success: utmifySuccess });
+      logStep("UTMify tracking result", { success: utmifySuccess, email: customerEmail });
 
       return new Response(
         JSON.stringify({ 
           received: true,
           paymentIntentId: paymentIntent.id,
           utmifyTracked: utmifySuccess,
+          email: customerEmail || 'not_available',
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },

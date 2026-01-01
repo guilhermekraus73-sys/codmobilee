@@ -20,22 +20,32 @@ const Success = () => {
       const orderId = paymentIntentId || sessionId;
       if (!orderId || purchaseTracked) return;
 
-      // Get package info from sessionStorage
-      const packagePrice = sessionStorage.getItem('checkout_price') || '19.90';
-      const customerEmail = sessionStorage.getItem('checkout_email') || '';
+      // Get package info from sessionStorage with fallbacks
+      let packagePrice = sessionStorage.getItem('checkout_price');
+      let customerEmail = sessionStorage.getItem('checkout_email');
       const utmData = getStoredUTMData();
+
+      // If sessionStorage is empty, try to get from URL params or localStorage
+      if (!packagePrice) {
+        packagePrice = localStorage.getItem('last_checkout_price') || '19.90';
+      }
+      if (!customerEmail) {
+        customerEmail = localStorage.getItem('last_checkout_email') || '';
+      }
 
       console.log('[UTMify] Tracking purchase from Success page:', { 
         orderId, 
         price: packagePrice, 
         email: customerEmail,
-        utmData 
+        utmData,
+        hasUTMData: !!utmData && Object.keys(utmData).length > 0
       });
 
       // Track via client-side (pixel)
       trackPurchase(orderId, parseFloat(packagePrice), 'USD');
 
       // Also track via server-side (edge function) as backup
+      // This is the most reliable method
       try {
         const { data, error } = await supabase.functions.invoke('track-purchase', {
           body: {
@@ -49,6 +59,23 @@ const Success = () => {
 
         if (error) {
           console.error('[UTMify] Server-side tracking error:', error);
+          // Retry once after 2 seconds
+          setTimeout(async () => {
+            try {
+              await supabase.functions.invoke('track-purchase', {
+                body: {
+                  orderId,
+                  value: parseFloat(packagePrice!),
+                  currency: 'USD',
+                  email: customerEmail,
+                  utmData,
+                }
+              });
+              console.log('[UTMify] Retry successful');
+            } catch (retryErr) {
+              console.error('[UTMify] Retry also failed:', retryErr);
+            }
+          }, 2000);
         } else {
           console.log('[UTMify] Server-side tracking success:', data);
         }
