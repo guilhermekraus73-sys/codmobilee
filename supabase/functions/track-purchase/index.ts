@@ -50,7 +50,7 @@ serve(async (req) => {
         parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
       },
       event: {
-        sourceUrl: "https://codmobile.shop/success",
+        sourceUrl: "https://codpointsmobile.online/success",
         pageTitle: "Compra COD Mobile CP",
         value: value,
         currency: currency || "USD",
