@@ -54,7 +54,10 @@ async function sendPurchaseToUtmify(data: {
   email?: string;
   utmData?: Record<string, string>;
 }): Promise<boolean> {
-  logStep("STARTING UTMify tracking", { orderId: data.orderId, value: data.value, email: data.email });
+  logStep("========================================");
+  logStep("PRIMARY TRACKING - WEBHOOK TO UTMIFY");
+  logStep("========================================");
+  logStep("Starting UTMify tracking", { orderId: data.orderId, value: data.value, email: data.email });
   
   try {
     const utmifyApiKey = Deno.env.get("UTMIFY_API_KEY");

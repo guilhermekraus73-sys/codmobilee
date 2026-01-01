@@ -62,8 +62,15 @@ serve(async (req) => {
   try {
     logStep("Processing tracking request");
     
-    const { orderId, value, currency, email, utmData } = await req.json();
-    logStep("Request data received", { orderId, value, currency, email, hasUtmData: !!utmData });
+    const { orderId, value, currency, email, utmData, source } = await req.json();
+    logStep("Request data received", { 
+      orderId, 
+      value, 
+      currency, 
+      email, 
+      hasUtmData: !!utmData,
+      source: source || 'unknown'
+    });
 
     // Validate required fields
     if (!orderId || value === undefined || value === null) {
