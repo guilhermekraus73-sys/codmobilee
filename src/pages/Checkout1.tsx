@@ -128,7 +128,8 @@ const CheckoutForm = () => {
 
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
-        navigate(`/success?session_id=${paymentIntent?.id}`);
+        sessionStorage.setItem('checkout_email', event.payerEmail || formData.email);
+        navigate(`/success?payment_intent=${paymentIntent?.id}`);
       } catch (err) {
         event.complete('fail');
         console.error('Payment error:', err);
@@ -216,7 +217,8 @@ const CheckoutForm = () => {
       if (paymentIntent?.status === 'succeeded') {
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
-        navigate(`/success?session_id=${paymentIntent.id}`);
+        sessionStorage.setItem('checkout_email', formData.email);
+        navigate(`/success?payment_intent=${paymentIntent.id}`);
       }
     } catch (err) {
       console.error('Payment error:', err);
