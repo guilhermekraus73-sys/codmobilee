@@ -18,72 +18,95 @@ const Success = () => {
     const trackPurchaseToUtmify = async () => {
       // Get the order ID - prefer payment_intent, fallback to session_id
       const orderId = paymentIntentId || sessionId;
-      if (!orderId || purchaseTracked) return;
+      if (!orderId || purchaseTracked) {
+        console.log('[UTMify] Skipping tracking:', { orderId, purchaseTracked });
+        return;
+      }
 
       // Get package info from sessionStorage with fallbacks
       let packagePrice = sessionStorage.getItem('checkout_price');
       let customerEmail = sessionStorage.getItem('checkout_email');
+      const packageId = sessionStorage.getItem('checkout_package');
       const utmData = getStoredUTMData();
 
-      // If sessionStorage is empty, try to get from URL params or localStorage
+      // If sessionStorage is empty, try to get from localStorage
       if (!packagePrice) {
-        packagePrice = localStorage.getItem('last_checkout_price') || '19.90';
+        packagePrice = localStorage.getItem('last_checkout_price');
       }
       if (!customerEmail) {
-        customerEmail = localStorage.getItem('last_checkout_email') || '';
+        customerEmail = localStorage.getItem('last_checkout_email');
       }
 
-      console.log('[UTMify] Tracking purchase from Success page:', { 
-        orderId, 
-        price: packagePrice, 
-        email: customerEmail,
-        utmData,
-        hasUTMData: !!utmData && Object.keys(utmData).length > 0
-      });
+      // If still no price, determine from URL or use package mapping
+      if (!packagePrice) {
+        // Map package IDs to prices
+        const priceMap: Record<string, string> = {
+          'cp-800': '9.00',
+          'cp-1600': '15.90',
+          'cp-4000': '19.90',
+          'cp-test': '1.00',
+        };
+        packagePrice = packageId ? priceMap[packageId] || '9.00' : '9.00';
+        console.log('[UTMify] Using fallback price from package mapping:', packagePrice);
+      }
 
-      // Track via client-side (pixel)
-      trackPurchase(orderId, parseFloat(packagePrice), 'USD');
+      console.log('[UTMify] === TRACKING PURCHASE ===');
+      console.log('[UTMify] Order ID:', orderId);
+      console.log('[UTMify] Price:', packagePrice);
+      console.log('[UTMify] Email:', customerEmail);
+      console.log('[UTMify] Package:', packageId);
+      console.log('[UTMify] UTM Data:', utmData);
 
-      // Also track via server-side (edge function) as backup
-      // This is the most reliable method
+      // Track via client-side (pixel) - may be blocked by ad blockers
+      try {
+        trackPurchase(orderId, parseFloat(packagePrice), 'USD');
+        console.log('[UTMify] Client-side tracking dispatched');
+      } catch (e) {
+        console.error('[UTMify] Client-side tracking error:', e);
+      }
+
+      // Track via server-side (edge function) - most reliable method
+      console.log('[UTMify] Sending to server-side track-purchase...');
       try {
         const { data, error } = await supabase.functions.invoke('track-purchase', {
           body: {
             orderId,
             value: parseFloat(packagePrice),
             currency: 'USD',
-            email: customerEmail,
-            utmData,
+            email: customerEmail || '',
+            utmData: utmData || {},
           }
         });
 
         if (error) {
           console.error('[UTMify] Server-side tracking error:', error);
           // Retry once after 2 seconds
+          console.log('[UTMify] Scheduling retry in 2 seconds...');
           setTimeout(async () => {
             try {
-              await supabase.functions.invoke('track-purchase', {
+              const retryResult = await supabase.functions.invoke('track-purchase', {
                 body: {
                   orderId,
                   value: parseFloat(packagePrice!),
                   currency: 'USD',
-                  email: customerEmail,
-                  utmData,
+                  email: customerEmail || '',
+                  utmData: utmData || {},
                 }
               });
-              console.log('[UTMify] Retry successful');
+              console.log('[UTMify] Retry result:', retryResult);
             } catch (retryErr) {
               console.error('[UTMify] Retry also failed:', retryErr);
             }
           }, 2000);
         } else {
-          console.log('[UTMify] Server-side tracking success:', data);
+          console.log('[UTMify] ✅ Server-side tracking SUCCESS:', data);
         }
       } catch (err) {
         console.error('[UTMify] Server-side tracking failed:', err);
       }
 
       setPurchaseTracked(true);
+      console.log('[UTMify] === TRACKING COMPLETE ===');
     };
 
     trackPurchaseToUtmify();
