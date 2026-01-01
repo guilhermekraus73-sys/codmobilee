@@ -125,12 +125,15 @@ serve(async (req) => {
         }
       }
 
+      // Get email from metadata (support both 'email' and 'customer_email' fields)
+      const customerEmail = paymentIntent.metadata.email || paymentIntent.metadata.customer_email;
+
       // Send to UTMify
       const utmifySuccess = await sendPurchaseToUtmify({
         orderId: paymentIntent.id,
         value: paymentIntent.amount / 100, // Convert from cents to dollars
         currency: paymentIntent.currency.toUpperCase(),
-        email: paymentIntent.metadata.email,
+        email: customerEmail,
         utmData,
       });
 
