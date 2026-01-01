@@ -152,14 +152,14 @@ serve(async (req) => {
         metadata: paymentIntent.metadata,
       });
 
-      // Process both COD Mobile and Free Fire payments
+      // Only process COD Mobile payments (has packageId in metadata)
+      // Skip Free Fire payments (has diamonds in metadata) - handled by separate webhook
       const isCodPayment = paymentIntent.metadata.packageId !== undefined;
-      const isFreeFire = paymentIntent.metadata.diamonds !== undefined;
       
-      if (!isCodPayment && !isFreeFire) {
-        logStep("Skipping unrecognized product");
+      if (!isCodPayment) {
+        logStep("Skipping non-COD payment (handled by other webhook)");
         return new Response(
-          JSON.stringify({ received: true, skipped: true, reason: "Not a COD or Free Fire payment" }),
+          JSON.stringify({ received: true, skipped: true, reason: "Not a COD payment" }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
@@ -167,9 +167,7 @@ serve(async (req) => {
         );
       }
 
-      const productType = isCodPayment ? "COD Mobile" : "Free Fire";
-
-      logStep(`Processing ${productType} payment`);
+      logStep("Processing COD payment");
 
       // Extract UTM data from metadata - capture all possible params
       const utmData: Record<string, string> = {};
@@ -184,8 +182,8 @@ serve(async (req) => {
         }
       }
 
-      // Get email from metadata (check both COD and Free Fire field names)
-      let customerEmail = paymentIntent.metadata.email || paymentIntent.metadata.customer_email;
+      // Get email from metadata or customer
+      let customerEmail = paymentIntent.metadata.email;
       
       // If no email in metadata, try to get from Stripe customer
       if (!customerEmail && paymentIntent.customer) {
