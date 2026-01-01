@@ -33,7 +33,7 @@ async function sendPurchaseToUtmify(data: {
         parameters: data.utmData ? new URLSearchParams(data.utmData).toString() : "",
       },
       event: {
-        sourceUrl: "https://codmobile.shop/success",
+        sourceUrl: "https://tracking.codmobile.shop/success",
         pageTitle: "Compra COD Mobile CP",
         value: data.value,
         currency: data.currency,
