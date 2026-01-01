@@ -4,28 +4,67 @@ import { Check, ArrowRight, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
 import { trackPurchase, getStoredUTMData } from '@/lib/utmify';
+import { supabase } from '@/integrations/supabase/client';
 
 const Success = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get('session_id');
+  const paymentIntentId = searchParams.get('payment_intent');
   const [showConfetti, setShowConfetti] = useState(true);
   const [purchaseTracked, setPurchaseTracked] = useState(false);
 
   useEffect(() => {
-    // Track purchase event once
-    if (sessionId && !purchaseTracked) {
-      // Get package info from sessionStorage or URL
-      const packagePrice = sessionStorage.getItem('checkout_price') || '9.00';
-      trackPurchase(sessionId, parseFloat(packagePrice), 'USD');
+    const trackPurchaseToUtmify = async () => {
+      // Get the order ID - prefer payment_intent, fallback to session_id
+      const orderId = paymentIntentId || sessionId;
+      if (!orderId || purchaseTracked) return;
+
+      // Get package info from sessionStorage
+      const packagePrice = sessionStorage.getItem('checkout_price') || '19.90';
+      const customerEmail = sessionStorage.getItem('checkout_email') || '';
+      const utmData = getStoredUTMData();
+
+      console.log('[UTMify] Tracking purchase from Success page:', { 
+        orderId, 
+        price: packagePrice, 
+        email: customerEmail,
+        utmData 
+      });
+
+      // Track via client-side (pixel)
+      trackPurchase(orderId, parseFloat(packagePrice), 'USD');
+
+      // Also track via server-side (edge function) as backup
+      try {
+        const { data, error } = await supabase.functions.invoke('track-purchase', {
+          body: {
+            orderId,
+            value: parseFloat(packagePrice),
+            currency: 'USD',
+            email: customerEmail,
+            utmData,
+          }
+        });
+
+        if (error) {
+          console.error('[UTMify] Server-side tracking error:', error);
+        } else {
+          console.log('[UTMify] Server-side tracking success:', data);
+        }
+      } catch (err) {
+        console.error('[UTMify] Server-side tracking failed:', err);
+      }
+
       setPurchaseTracked(true);
-      console.log('[UTMify] Purchase event tracked:', { sessionId, price: packagePrice });
-    }
+    };
+
+    trackPurchaseToUtmify();
 
     // Hide confetti after animation
     const timer = setTimeout(() => setShowConfetti(false), 3000);
     return () => clearTimeout(timer);
-  }, [sessionId, purchaseTracked]);
+  }, [sessionId, paymentIntentId, purchaseTracked]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] to-[#1a1a1a] flex flex-col">
