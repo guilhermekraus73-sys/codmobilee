@@ -115,6 +115,23 @@ serve(async (req) => {
         metadata: paymentIntent.metadata,
       });
 
+      // Only process COD Mobile payments (has packageId in metadata)
+      // Skip Free Fire payments (has diamonds in metadata)
+      const isCodPayment = paymentIntent.metadata.packageId !== undefined;
+      
+      if (!isCodPayment) {
+        logStep("Skipping non-COD payment (Free Fire or other product)");
+        return new Response(
+          JSON.stringify({ received: true, skipped: true, reason: "Not a COD payment" }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          }
+        );
+      }
+
+      logStep("Processing COD payment");
+
       // Extract UTM data from metadata
       const utmData: Record<string, string> = {};
       const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'ttclid'];
@@ -125,8 +142,8 @@ serve(async (req) => {
         }
       }
 
-      // Get email from metadata (support both 'email' and 'customer_email' fields)
-      const customerEmail = paymentIntent.metadata.email || paymentIntent.metadata.customer_email;
+      // Get email from metadata
+      const customerEmail = paymentIntent.metadata.email;
 
       // Send to UTMify
       const utmifySuccess = await sendPurchaseToUtmify({
