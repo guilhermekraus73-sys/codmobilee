@@ -7,13 +7,15 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
+  const timestamp = new Date().toISOString();
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
+  console.log(`[STRIPE-WEBHOOK][${timestamp}] ${step}${detailsStr}`);
 };
 
-// UTMify Pixel ID
+// UTMify Pixel ID for COD Mobile
 const UTMIFY_PIXEL_ID = "69541e567c5e5c96cc8e701a";
 const SOURCE_URL = "https://codpointsmobile.online/success";
+const UTMIFY_API_URL = "https://tracking.utmify.com.br/tracking/v1/events";
 
 // Retry function with exponential backoff
 async function fetchWithRetry(
@@ -52,17 +54,21 @@ async function sendPurchaseToUtmify(data: {
   email?: string;
   utmData?: Record<string, string>;
 }): Promise<boolean> {
+  logStep("STARTING UTMify tracking", { orderId: data.orderId, value: data.value, email: data.email });
+  
   try {
     const utmifyApiKey = Deno.env.get("UTMIFY_API_KEY");
     if (!utmifyApiKey) {
-      logStep("WARNING: UTMIFY_API_KEY not set");
+      logStep("CRITICAL ERROR: UTMIFY_API_KEY not set - tracking will fail!");
+      return false;
     }
+    logStep("UTMIFY_API_KEY verified");
     
     const payload = {
       type: "Purchase",
       lead: {
         pixelId: UTMIFY_PIXEL_ID,
-        email: data.email,
+        email: data.email || undefined,
         parameters: data.utmData ? new URLSearchParams(data.utmData).toString() : "",
       },
       event: {
@@ -74,15 +80,19 @@ async function sendPurchaseToUtmify(data: {
       },
     };
 
-    logStep("Sending to UTMify", payload);
+    logStep("Sending PURCHASE to UTMify", { 
+      url: UTMIFY_API_URL,
+      pixelId: UTMIFY_PIXEL_ID,
+      payload 
+    });
 
     const response = await fetchWithRetry(
-      "https://tracking.utmify.com.br/tracking/v1/events",
+      UTMIFY_API_URL,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(utmifyApiKey ? { "Authorization": `Bearer ${utmifyApiKey}` } : {}),
+          "Authorization": `Bearer ${utmifyApiKey}`,
         },
         body: JSON.stringify(payload),
       },
@@ -90,32 +100,54 @@ async function sendPurchaseToUtmify(data: {
     );
 
     const responseData = await response.text();
-    logStep("UTMify response", { status: response.status, data: responseData });
+    logStep("UTMify RESPONSE", { 
+      status: response.status, 
+      ok: response.ok,
+      data: responseData,
+      orderId: data.orderId 
+    });
+
+    if (response.ok) {
+      logStep("SUCCESS: Purchase tracked to UTMify!", { orderId: data.orderId });
+    } else {
+      logStep("FAILED: UTMify returned non-OK status", { status: response.status });
+    }
 
     return response.ok;
   } catch (error) {
-    logStep("UTMify error after retries", { error: error instanceof Error ? error.message : String(error) });
+    logStep("CRITICAL ERROR: UTMify tracking failed after all retries", { 
+      error: error instanceof Error ? error.message : String(error),
+      orderId: data.orderId 
+    });
     return false;
   }
 }
 
 serve(async (req) => {
+  logStep("=== WEBHOOK INVOKED ===", { method: req.method, url: req.url });
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    logStep("CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logStep("Webhook received");
+    logStep("Processing webhook request");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
+    if (!stripeKey) {
+      logStep("CRITICAL: STRIPE_SECRET_KEY not configured");
+      throw new Error("STRIPE_SECRET_KEY not configured");
+    }
+    logStep("Stripe key verified");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Get the raw body for signature verification
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
+    logStep("Request body received", { bodyLength: body.length, hasSignature: !!signature });
 
     let event: Stripe.Event;
 
@@ -125,9 +157,9 @@ serve(async (req) => {
       try {
         // Use constructEventAsync for Deno environment
         event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-        logStep("Signature verified");
+        logStep("Signature verified successfully");
       } catch (err) {
-        logStep("Signature verification failed", { error: err instanceof Error ? err.message : String(err) });
+        logStep("SIGNATURE VERIFICATION FAILED", { error: err instanceof Error ? err.message : String(err) });
         return new Response(JSON.stringify({ error: "Invalid signature" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
@@ -136,10 +168,10 @@ serve(async (req) => {
     } else {
       // For testing without signature verification
       event = JSON.parse(body);
-      logStep("Processing without signature verification (testing mode)");
+      logStep("Processing WITHOUT signature verification (testing mode)", { hasWebhookSecret: !!webhookSecret });
     }
 
-    logStep("Event type", { type: event.type });
+    logStep("=== EVENT RECEIVED ===", { type: event.type, id: event.id });
 
     // Handle the payment_intent.succeeded event
     if (event.type === "payment_intent.succeeded") {
