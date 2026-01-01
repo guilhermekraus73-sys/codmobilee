@@ -126,9 +126,13 @@ const CheckoutForm = () => {
           }
         }
 
+        // Save to both sessionStorage and localStorage for reliability
+        const emailToSave = event.payerEmail || formData.email;
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
-        sessionStorage.setItem('checkout_email', event.payerEmail || formData.email);
+        sessionStorage.setItem('checkout_email', emailToSave);
+        localStorage.setItem('last_checkout_price', packageData.price);
+        localStorage.setItem('last_checkout_email', emailToSave);
         navigate(`/success?payment_intent=${paymentIntent?.id}`);
       } catch (err) {
         event.complete('fail');
@@ -215,9 +219,12 @@ const CheckoutForm = () => {
       }
 
       if (paymentIntent?.status === 'succeeded') {
+        // Save to both sessionStorage and localStorage for reliability
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
         sessionStorage.setItem('checkout_email', formData.email);
+        localStorage.setItem('last_checkout_price', packageData.price);
+        localStorage.setItem('last_checkout_email', formData.email);
         navigate(`/success?payment_intent=${paymentIntent.id}`);
       }
     } catch (err) {
