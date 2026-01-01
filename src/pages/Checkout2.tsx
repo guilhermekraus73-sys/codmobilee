@@ -49,6 +49,7 @@ const CheckoutForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
+  const [stripeReady, setStripeReady] = useState(false);
 
   const packageData = {
     id: 'cp-1600',
@@ -57,6 +58,14 @@ const CheckoutForm = () => {
     total: 2800,
     price: '15.90'
   };
+
+  // Mark Stripe as ready when both stripe and elements are loaded
+  useEffect(() => {
+    if (stripe && elements) {
+      console.log('[Checkout2] Stripe and Elements loaded successfully');
+      setStripeReady(true);
+    }
+  }, [stripe, elements]);
 
   // Setup Payment Request (Apple Pay / Google Pay)
   useEffect(() => {
@@ -205,6 +214,18 @@ const CheckoutForm = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading while Stripe initializes
+  if (!stripeReady) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-green-500 mx-auto mb-4" />
+          <p className="text-gray-600">Cargando formulario de pago...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
