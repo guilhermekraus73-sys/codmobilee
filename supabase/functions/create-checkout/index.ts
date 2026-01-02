@@ -87,6 +87,7 @@ serve(async (req) => {
           utm_term: utmData?.utm_term || "",
           fbclid: utmData?.fbclid || "",
           gclid: utmData?.gclid || "",
+          xcod: utmData?.xcod || "",
         },
       },
     });
