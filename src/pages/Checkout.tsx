@@ -1,26 +1,177 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clock, Lock, CreditCard } from 'lucide-react';
-import cpCoin from '@/assets/cp-coin.png';
-import codmBanner from '@/assets/codm-banner.png';
+import { Clock, Lock, Loader2, CreditCard, AlertTriangle } from 'lucide-react';
+import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
+import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
+import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
+import { supabase } from '@/integrations/supabase/client';
+import { loadStripe, PaymentRequest } from '@stripe/stripe-js';
+import { 
+  Elements, 
+  CardNumberElement, 
+  CardExpiryElement, 
+  CardCvcElement, 
+  PaymentRequestButtonElement,
+  useStripe, 
+  useElements 
+} from '@stripe/react-stripe-js';
+import { usePaymentRateLimiting, isValidEmail } from '@/hooks/usePaymentRateLimiting';
 
-const Checkout = () => {
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+const cardElementStyles = {
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#1f2937',
+      '::placeholder': {
+        color: '#9ca3af',
+      },
+      fontFamily: 'system-ui, sans-serif',
+    },
+    invalid: {
+      color: '#ef4444',
+    },
+  },
+};
+
+const CheckoutForm = () => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const navigate = useNavigate();
+  
   const [timeLeft, setTimeLeft] = useState({ minutes: 9, seconds: 59 });
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
-    cardName: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
+  const [stripeReady, setStripeReady] = useState(false);
+  const [cooldownTimer, setCooldownTimer] = useState(0);
 
-  // Get selected package from localStorage
-  const selectedPackage = JSON.parse(localStorage.getItem('selectedPackage') || '{}');
-  const playerId = localStorage.getItem('playerId') || '';
+  // Rate limiting
+  const { 
+    canAttemptPayment, 
+    recordAttempt, 
+    handleRateLimitResponse,
+    isBlocked,
+    blockReason,
+    getCooldownRemaining 
+  } = usePaymentRateLimiting();
+
+  // Get selected package from localStorage or use default
+  const storedPackage = JSON.parse(localStorage.getItem('selectedPackage') || '{}');
+  const packageData = {
+    id: storedPackage.id || 'cp-1600',
+    cp: storedPackage.cp || 1600,
+    bonus: storedPackage.bonus || 1200,
+    total: storedPackage.total || 2800,
+    price: storedPackage.price || '15.90'
+  };
+
+  // Cooldown timer effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const remaining = getCooldownRemaining();
+      setCooldownTimer(remaining);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [getCooldownRemaining]);
+
+  // Mark Stripe as ready when both stripe and elements are loaded
+  useEffect(() => {
+    if (stripe && elements) {
+      console.log('[Checkout] Stripe and Elements loaded successfully');
+      setStripeReady(true);
+    }
+  }, [stripe, elements]);
+
+  // Setup Payment Request (Apple Pay / Google Pay)
+  useEffect(() => {
+    if (!stripe) return;
+
+    const pr = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: {
+        label: `${packageData.cp} CP + ${packageData.bonus} Bonus`,
+        amount: Math.round(parseFloat(packageData.price) * 100),
+      },
+      requestPayerName: true,
+      requestPayerEmail: true,
+    });
+
+    pr.canMakePayment().then((result) => {
+      if (result) {
+        setPaymentRequest(pr);
+      }
+    });
+
+    pr.on('paymentmethod', async (event) => {
+      try {
+        const utmData = getUTMDataForConversion();
+        
+        const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
+          body: {
+            packageId: packageData.id,
+            email: event.payerEmail || formData.email,
+            utmData,
+          },
+        });
+
+        if (fnError || !data?.clientSecret) {
+          event.complete('fail');
+          return;
+        }
+
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          data.clientSecret,
+          { payment_method: event.paymentMethod.id },
+          { handleActions: false }
+        );
+
+        if (confirmError) {
+          event.complete('fail');
+          return;
+        }
+
+        event.complete('success');
+
+        if (paymentIntent?.status === 'requires_action') {
+          const { error: actionError } = await stripe.confirmCardPayment(data.clientSecret);
+          if (actionError) {
+            setError(actionError.message || 'Error al procesar el pago');
+            return;
+          }
+        }
+
+        const emailToSave = event.payerEmail || formData.email;
+        const nameToSave = event.payerName || formData.fullName;
+        sessionStorage.setItem('checkout_price', packageData.price);
+        sessionStorage.setItem('checkout_package', packageData.id);
+        sessionStorage.setItem('checkout_email', emailToSave);
+        sessionStorage.setItem('checkout_name', nameToSave);
+        sessionStorage.setItem('checkout_product_name', `${packageData.cp} CP + ${packageData.bonus} Bonus`);
+        localStorage.setItem('last_checkout_price', packageData.price);
+        localStorage.setItem('last_checkout_email', emailToSave);
+        localStorage.setItem('last_checkout_name', nameToSave);
+        navigate(`/success?payment_intent=${paymentIntent?.id}`);
+      } catch (err) {
+        event.complete('fail');
+        console.error('Payment error:', err);
+      }
+    });
+  }, [stripe, formData.email, navigate, packageData]);
 
   useEffect(() => {
+    initUTMTracking();
+    trackPageView('checkout');
+    trackInitiateCheckout(parseFloat(packageData.price), 'USD');
+    
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev.seconds > 0) {
@@ -39,30 +190,112 @@ const Checkout = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (name === 'cardNumber') {
-      // Format card number with spaces
-      const cleaned = value.replace(/\D/g, '').slice(0, 16);
-      const formatted = cleaned.replace(/(\d{4})/g, '$1 ').trim();
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    } else if (name === 'expiry') {
-      // Format expiry as MM/YY
-      const cleaned = value.replace(/\D/g, '').slice(0, 4);
-      const formatted = cleaned.length > 2 ? `${cleaned.slice(0, 2)}/${cleaned.slice(2)}` : cleaned;
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    } else if (name === 'cvv') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 4);
-      setFormData(prev => ({ ...prev, [name]: cleaned }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+    if (!stripe || !elements) {
+      return;
+    }
+
+    // Validate email
+    if (!isValidEmail(formData.email)) {
+      setError('Por favor ingresa un correo electrónico válido.');
+      return;
+    }
+
+    // Get card last4 for rate limiting
+    const cardElement = elements.getElement(CardNumberElement);
+    if (!cardElement) {
+      setError('Error con el formulario de pago');
+      return;
+    }
+
+    // Check rate limits before proceeding
+    const rateCheck = canAttemptPayment();
+    if (!rateCheck.allowed) {
+      setError(rateCheck.reason || 'Demasiados intentos. Por favor espera.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const utmData = getUTMDataForConversion();
+      
+      // Use process-card-payment with rate limiting
+      const { data, error: fnError } = await supabase.functions.invoke('process-card-payment', {
+        body: {
+          packageId: packageData.id,
+          email: formData.email,
+          utmData,
+        },
+      });
+
+      // Handle rate limit response
+      if (data?.blocked) {
+        handleRateLimitResponse(data);
+        setError(data.error || 'Rate limit exceeded');
+        setIsLoading(false);
+        return;
+      }
+
+      if (fnError) throw fnError;
+      if (!data?.clientSecret) throw new Error('No se pudo crear el pago');
+
+      const cardNumber = elements.getElement(CardNumberElement);
+      if (!cardNumber) throw new Error('Error con el formulario de pago');
+
+      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: {
+          card: cardNumber,
+          billing_details: {
+            name: formData.fullName,
+            email: formData.email,
+          },
+        },
+      });
+
+      // Record attempt after trying
+      recordAttempt();
+
+      if (paymentError) {
+        throw new Error(paymentError.message);
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        sessionStorage.setItem('checkout_price', packageData.price);
+        sessionStorage.setItem('checkout_package', packageData.id);
+        sessionStorage.setItem('checkout_email', formData.email);
+        sessionStorage.setItem('checkout_name', formData.fullName);
+        sessionStorage.setItem('checkout_product_name', `${packageData.cp} CP + ${packageData.bonus} Bonus`);
+        localStorage.setItem('last_checkout_price', packageData.price);
+        localStorage.setItem('last_checkout_email', formData.email);
+        localStorage.setItem('last_checkout_name', formData.fullName);
+        navigate(`/success?payment_intent=${paymentIntent.id}`);
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      recordAttempt();
+      setError(err instanceof Error ? err.message : 'Error al procesar el pago');
+      setIsLoading(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle payment submission
-    console.log('Payment submitted:', formData);
-  };
+  // Show loading while Stripe initializes
+  if (!stripeReady) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-green-500 mx-auto mb-4" />
+          <p className="text-gray-600">Cargando formulario de pago...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
@@ -83,7 +316,7 @@ const Checkout = () => {
       <div className="px-4 py-6">
         <div className="max-w-3xl mx-auto">
           <img 
-            src={codmBanner} 
+            src={codmCheckoutBanner} 
             alt="Call of Duty Mobile" 
             className="w-full rounded-lg shadow-lg"
           />
@@ -93,36 +326,42 @@ const Checkout = () => {
       {/* Checkout Card */}
       <div className="px-4 pb-8">
         <div className="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-6">
+          {/* Blocked Warning */}
+          {isBlocked && (
+            <div className="mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              <span>{blockReason || 'Has excedido el límite de intentos.'}</span>
+            </div>
+          )}
+
+          {/* Cooldown Warning */}
+          {cooldownTimer > 0 && !isBlocked && (
+            <div className="mb-4 bg-yellow-100 border border-yellow-300 text-yellow-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              <span>Espera {cooldownTimer} segundos antes de intentar de nuevo.</span>
+            </div>
+          )}
+
           {/* Product Summary */}
           <div className="flex items-start gap-4 mb-6 pb-6 border-b border-gray-100">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <img src={cpCoin} alt="CP" className="w-10 h-10" />
+            <div className="w-14 h-14 rounded-lg flex items-center justify-center overflow-hidden">
+              <img src={cpCoinsGold} alt="CP" className="w-full h-full object-cover" />
             </div>
             <div>
               <h2 className="font-semibold text-gray-800 text-lg">
                 Bono de CP - Call of Duty Mobile
               </h2>
               <p className="text-gray-500 text-sm">
-                {selectedPackage.cp || '5000'} + Bonus
+                {packageData.cp} CP + {packageData.bonus} Bonus
               </p>
               <p className="text-green-500 font-bold text-lg mt-1">
-                Total: $ {selectedPackage.price || '15.90'} USD
+                Total: ${packageData.price} USD
               </p>
             </div>
           </div>
 
-          {/* Player ID Display */}
-          {playerId && (
-            <div className="mb-6 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">ID del Jugador:</span> {playerId}
-              </p>
-            </div>
-          )}
-
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Tu correo electrónico
@@ -133,12 +372,11 @@ const Checkout = () => {
                 placeholder="Ingresa tu correo para recibir la compra"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12"
+                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
                 required
               />
             </div>
 
-            {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Nombre completo
@@ -149,116 +387,141 @@ const Checkout = () => {
                 placeholder="Ingresa tu nombre completo"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12"
+                className="bg-gray-50 border-gray-200 h-12 text-gray-900"
                 required
               />
             </div>
 
-            {/* Google Pay Button */}
-            <Button 
-              type="button"
-              className="w-full h-12 bg-black hover:bg-gray-800 text-white font-medium rounded-lg flex items-center justify-center gap-2"
-            >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              <span>Pay</span>
-            </Button>
+            {/* Apple Pay / Google Pay Button */}
+            {paymentRequest && !isBlocked && (
+              <>
+                <div className="pt-2">
+                  <PaymentRequestButtonElement 
+                    options={{ 
+                      paymentRequest,
+                      style: {
+                        paymentRequestButton: {
+                          type: 'default',
+                          theme: 'dark',
+                          height: '48px',
+                        },
+                      },
+                    }} 
+                  />
+                </div>
+                
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-gray-200"></div>
+                  <span className="flex-shrink mx-4 text-gray-400 text-sm">o pagar con tarjeta</span>
+                  <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+              </>
+            )}
 
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+            {/* Card Payment Section - Highlighted */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2 text-blue-700 font-semibold">
+                <CreditCard className="w-5 h-5" />
+                <span>Datos de tu tarjeta</span>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">o pagar con tarjeta</span>
-              </div>
-            </div>
 
-            {/* Card Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Nombre en la tarjeta
-              </label>
-              <Input
-                type="text"
-                name="cardName"
-                placeholder="Como aparece en la tarjeta"
-                value={formData.cardName}
-                onChange={handleInputChange}
-                className="bg-gray-50 border-gray-200 h-12"
-              />
-            </div>
-
-            {/* Card Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Número de tarjeta
-              </label>
-              <div className="relative">
-                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <Input
-                  type="text"
-                  name="cardNumber"
-                  placeholder="1234 1234 1234 1234"
-                  value={formData.cardNumber}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12 pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Expiry and CVV */}
-            <div className="grid grid-cols-2 gap-4">
+              {/* Card Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Vencimiento
+                  Nombre en la tarjeta *
                 </label>
                 <Input
                   type="text"
-                  name="expiry"
-                  placeholder="MM/AA"
-                  value={formData.expiry}
+                  name="cardName"
+                  placeholder="Como aparece en la tarjeta"
+                  value={formData.fullName}
                   onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12"
+                  className="bg-white border-gray-300 h-12 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                  disabled={isBlocked}
                 />
               </div>
+
+              {/* Card Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  CVV
+                  Número de tarjeta *
                 </label>
-                <Input
-                  type="text"
-                  name="cvv"
-                  placeholder="CVC"
-                  value={formData.cvv}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border-gray-200 h-12"
-                />
+                <div className="bg-white border-2 border-gray-300 rounded-lg p-3 h-12 flex items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                  <CardNumberElement options={cardElementStyles} className="w-full" />
+                </div>
               </div>
+
+              {/* Expiry and CVV */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Vencimiento *
+                  </label>
+                  <div className="bg-white border-2 border-gray-300 rounded-lg p-3 h-12 flex items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                    <CardExpiryElement options={cardElementStyles} className="w-full" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    CVV *
+                  </label>
+                  <div className="bg-white border-2 border-gray-300 rounded-lg p-3 h-12 flex items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                    <CardCvcElement options={cardElementStyles} className="w-full" />
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 text-center">
+                Acepta Visa, Mastercard, American Express y más
+              </p>
             </div>
 
-            {/* Security Notice */}
-            <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-2 text-gray-500 text-sm py-2">
               <Lock className="w-4 h-4" />
               <span>Pago 100% seguro con encriptación SSL</span>
             </div>
 
-            {/* Submit Button */}
             <Button 
               type="submit"
-              className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-lg flex items-center justify-center gap-2"
+              disabled={isLoading || !stripe || isBlocked || cooldownTimer > 0}
+              className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-lg flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              <Lock className="w-5 h-5" />
-              PAGAR ${selectedPackage.price || '15.90'} USD
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Procesando...
+                </>
+              ) : cooldownTimer > 0 ? (
+                <>
+                  <Clock className="w-5 h-5" />
+                  Espera {cooldownTimer}s
+                </>
+              ) : (
+                <>
+                  <Lock className="w-5 h-5" />
+                  PAGAR ${packageData.price} USD
+                </>
+              )}
             </Button>
           </form>
         </div>
       </div>
     </div>
+  );
+};
+
+const Checkout = () => {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
   );
 };
 
