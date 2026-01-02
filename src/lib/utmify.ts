@@ -150,8 +150,37 @@ export const trackPurchase = (orderId: string, value: number, currency?: string)
   const utmData = getStoredUTMData();
   console.log('[Utmify] Purchase:', { orderId, value, currency, ...utmData });
   
-  // Dispatch Purchase event for UTMify pixel
   if (typeof window !== 'undefined') {
+    // CRITICAL: Track to Meta Pixel directly via fbq
+    if (typeof (window as any).fbq === 'function') {
+      console.log('[Utmify] Dispatching fbq Purchase event...');
+      (window as any).fbq('track', 'Purchase', {
+        value: value,
+        currency: currency || 'USD',
+        content_type: 'product',
+        content_ids: [orderId],
+        order_id: orderId
+      });
+      console.log('[Utmify] ✅ fbq Purchase event dispatched!');
+    } else {
+      console.warn('[Utmify] ⚠️ fbq not available yet, retrying in 500ms...');
+      // Retry after a short delay if fbq isn't loaded yet
+      setTimeout(() => {
+        if (typeof (window as any).fbq === 'function') {
+          (window as any).fbq('track', 'Purchase', {
+            value: value,
+            currency: currency || 'USD',
+            content_type: 'product',
+            content_ids: [orderId],
+            order_id: orderId
+          });
+          console.log('[Utmify] ✅ fbq Purchase event dispatched (delayed)!');
+        } else {
+          console.error('[Utmify] ❌ fbq still not available after delay');
+        }
+      }, 500);
+    }
+
     // Method 1: Using utmify global object
     if ((window as any).utmify) {
       (window as any).utmify.track('Purchase', { 
