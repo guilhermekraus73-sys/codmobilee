@@ -156,14 +156,25 @@ serve(async (req) => {
 
     // If we have a webhook secret, verify the signature
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    logStep("Webhook secret check", { 
+      hasWebhookSecret: !!webhookSecret, 
+      webhookSecretLength: webhookSecret?.length || 0,
+      webhookSecretPrefix: webhookSecret?.substring(0, 10) || "none"
+    });
+    
     if (webhookSecret && signature) {
       try {
         // Use constructEventAsync for Deno environment
         event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
         logStep("Signature verified successfully");
       } catch (err) {
-        logStep("SIGNATURE VERIFICATION FAILED", { error: err instanceof Error ? err.message : String(err) });
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        logStep("SIGNATURE VERIFICATION FAILED", { 
+          error: errorMsg,
+          signaturePrefix: signature?.substring(0, 30) || "none"
+        });
+        // Return 200 to acknowledge receipt but log the error
+        return new Response(JSON.stringify({ error: "Invalid signature", details: errorMsg }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
         });
