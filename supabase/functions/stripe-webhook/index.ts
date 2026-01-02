@@ -98,8 +98,8 @@ serve(async (req) => {
     const pi = event.data.object as Stripe.PaymentIntent;
     const meta = pi.metadata || {};
     
-    // Get email from multiple sources (metadata OR top-level receipt_email)
-    const customerEmail = meta.customer_email || (pi as any).receipt_email || meta.email;
+    // Get email from multiple sources - create-payment-intent saves as "email" in metadata
+    const customerEmail = meta.email || meta.customer_email || (pi as any).receipt_email;
 
     log("PaymentIntent details", {
       id: pi.id,
@@ -180,32 +180,53 @@ serve(async (req) => {
       payload,
     });
 
-    try {
-      const utmRes = await fetch(UTMIFY_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${UTMIFY_API_KEY}`,
-        },
-        body: JSON.stringify(payload),
-      });
+    // Send to UTMify with retry logic
+    let success = false;
+    let lastError = "";
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        log(`Attempt ${attempt}/3 sending to UTMify`);
+        
+        const utmRes = await fetch(UTMIFY_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${UTMIFY_API_KEY}`,
+          },
+          body: JSON.stringify(payload),
+        });
 
-      const utmText = await utmRes.text();
-      log("UTMify response", { 
-        status: utmRes.status, 
-        ok: utmRes.ok,
-        body: utmText,
-        orderId: pi.id
-      });
+        const utmText = await utmRes.text();
+        log("UTMify response", { 
+          status: utmRes.status, 
+          ok: utmRes.ok,
+          body: utmText,
+          orderId: pi.id,
+          attempt
+        });
 
-      if (utmRes.ok) {
-        log("✅ SUCCESS: Purchase tracked to UTMify via webhook!", { orderId: pi.id });
-      } else {
-        log("❌ UTMify API error", { status: utmRes.status, body: utmText });
+        if (utmRes.ok) {
+          log("✅ SUCCESS: Purchase tracked to UTMify via webhook!", { orderId: pi.id, attempt });
+          success = true;
+          break;
+        } else {
+          lastError = `HTTP ${utmRes.status}: ${utmText}`;
+          log("❌ UTMify API error, will retry", { status: utmRes.status, body: utmText, attempt });
+        }
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        log("❌ UTMify fetch error, will retry", { error: lastError, attempt });
       }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      log("❌ UTMify fetch error", { error: errorMsg });
+      
+      // Wait before retry (exponential backoff)
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, attempt * 1000));
+      }
+    }
+    
+    if (!success) {
+      log("❌ FAILED after 3 attempts to send to UTMify", { orderId: pi.id, lastError });
     }
 
     return new Response(
