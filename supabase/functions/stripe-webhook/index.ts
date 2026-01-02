@@ -106,35 +106,26 @@ serve(async (req) => {
       amount: pi.amount,
       currency: pi.currency,
       customer_email: customerEmail,
-      customer_name: meta.customer_name,
-      diamonds: meta.diamonds,
-      price_key: meta.price_key,
+      packageId: meta.packageId,
+      cpAmount: meta.cpAmount,
+      packageName: meta.packageName,
       receipt_email: (pi as any).receipt_email,
       metadata_keys: Object.keys(meta),
     });
 
-    // ROBUST COD payment detection:
-    // 1. Has diamonds or price_key in metadata (new COD flow)
-    // 2. Has cpAmount or packageId in metadata (old COD flow) 
-    // 3. Has customer_email in metadata
-    // 4. Payment amount matches COD packages ($9, $19, $19.90, $29, etc.)
-    const codAmounts = [900, 990, 1900, 1990, 2900, 2990, 3900, 3990, 4900, 4990]; // cents
-    const isCodAmount = codAmounts.includes(pi.amount);
+    // COD MOBILE SPECIFIC detection:
+    // COD uses: packageId (starts with "cp-") and cpAmount in metadata
+    // This is set by create-payment-intent for COD products
+    const hasCpPackageId = meta.packageId && meta.packageId.startsWith('cp-');
+    const hasCpAmount = !!meta.cpAmount;
     
-    const isCodPayment = 
-      meta.diamonds || 
-      meta.price_key || 
-      meta.customer_email ||
-      meta.cpAmount ||
-      meta.packageId ||
-      (isCodAmount && customerEmail); // COD amount + has email = likely COD
+    const isCodPayment = hasCpPackageId || hasCpAmount;
     
     if (!isCodPayment) {
-      log("⚠️ Not detected as COD payment, skipping UTMify", { 
-        metadata: meta,
-        amount: pi.amount,
-        hasEmail: !!customerEmail,
-        isCodAmount
+      log("⚠️ Not a COD Mobile payment (no cp- packageId or cpAmount), skipping", { 
+        packageId: meta.packageId,
+        cpAmount: meta.cpAmount,
+        metadata_keys: Object.keys(meta)
       });
       return new Response(JSON.stringify({ received: true, skipped: "not_cod" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -142,11 +133,12 @@ serve(async (req) => {
       });
     }
     
-    log("✅ COD payment detected, will send to UTMify", { 
-      diamonds: meta.diamonds,
+    log("✅ COD Mobile payment detected!", { 
+      packageId: meta.packageId,
+      cpAmount: meta.cpAmount,
+      packageName: meta.packageName,
       customer_email: customerEmail,
-      amount: pi.amount,
-      detection_reason: meta.diamonds ? "diamonds" : meta.price_key ? "price_key" : meta.customer_email ? "meta_email" : isCodAmount ? "cod_amount" : "other"
+      amount: pi.amount
     });
 
     // Send to UTMify using the SAME format as track-purchase (which works!)
