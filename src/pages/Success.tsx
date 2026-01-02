@@ -50,7 +50,7 @@ const Success = () => {
       }
 
       console.log('[UTMify] ========================================');
-      console.log('[UTMify] BACKUP TRACKING FROM SUCCESS PAGE');
+      console.log('[UTMify] PRIMARY TRACKING FROM CHECKOUT SUCCESS');
       console.log('[UTMify] ========================================');
       console.log('[UTMify] Order ID:', orderId);
       console.log('[UTMify] Price:', packagePrice, 'USD');
@@ -66,8 +66,8 @@ const Success = () => {
         console.error('[UTMify] ❌ Client-side pixel error:', e);
       }
 
-      // MÉTODO 2: Track via server-side (edge function) - BACKUP mais confiável
-      console.log('[UTMify] Sending to track-purchase edge function (BACKUP)...');
+      // Track via server-side (edge function) - PRIMARY method
+      console.log('[UTMify] Sending to track-purchase edge function (PRIMARY)...');
       
       const trackingPayload = {
         orderId,
@@ -75,7 +75,7 @@ const Success = () => {
         currency: 'USD',
         email: customerEmail || '',
         utmData: utmData || {},
-        source: 'success_page_backup' // Marca que veio do backup
+        source: 'checkout_success' // Identificador do funil COD Mobile
       };
 
       let trackingSuccess = false;
@@ -89,7 +89,7 @@ const Success = () => {
         if (error) {
           console.error('[UTMify] ❌ First attempt failed:', error);
         } else if (data?.success) {
-          console.log('[UTMify] ✅ BACKUP TRACKING SUCCESS (1st attempt):', data);
+          console.log('[UTMify] ✅ TRACKING SUCCESS (1st attempt):', data);
           trackingSuccess = true;
           setTrackingStatus('success');
         } else {
@@ -112,7 +112,7 @@ const Success = () => {
           if (error) {
             console.error('[UTMify] ❌ Second attempt failed:', error);
           } else if (data?.success) {
-            console.log('[UTMify] ✅ BACKUP TRACKING SUCCESS (2nd attempt):', data);
+            console.log('[UTMify] ✅ TRACKING SUCCESS (2nd attempt):', data);
             trackingSuccess = true;
             setTrackingStatus('success');
           }
@@ -132,7 +132,7 @@ const Success = () => {
           });
 
           if (!error && data?.success) {
-            console.log('[UTMify] ✅ BACKUP TRACKING SUCCESS (3rd attempt):', data);
+            console.log('[UTMify] ✅ TRACKING SUCCESS (3rd attempt):', data);
             setTrackingStatus('success');
           } else {
             console.error('[UTMify] ❌ All attempts failed');
@@ -146,7 +146,7 @@ const Success = () => {
 
       setPurchaseTracked(true);
       console.log('[UTMify] ========================================');
-      console.log('[UTMify] BACKUP TRACKING COMPLETE');
+      console.log('[UTMify] CHECKOUT TRACKING COMPLETE');
       console.log('[UTMify] ========================================');
     };
 
