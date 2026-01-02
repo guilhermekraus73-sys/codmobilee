@@ -166,41 +166,22 @@ export const usePaymentRateLimiting = () => {
   };
 };
 
-// Lista de domínios válidos conhecidos
-const VALID_DOMAINS = [
-  // Gmail
-  'gmail.com', 'googlemail.com',
-  // Microsoft
-  'hotmail.com', 'hotmail.com.br', 'outlook.com', 'outlook.com.br', 'live.com', 'msn.com',
-  // Yahoo
-  'yahoo.com', 'yahoo.com.br', 'ymail.com',
-  // Apple
-  'icloud.com', 'me.com', 'mac.com',
-  // Proton
-  'protonmail.com', 'proton.me',
-  // Outros populares
-  'aol.com', 'zoho.com', 'mail.com', 'gmx.com', 'tutanota.com',
-  // Brasil
-  'uol.com.br', 'bol.com.br', 'terra.com.br', 'ig.com.br', 'globo.com', 'r7.com',
-  // Latam
-  'latinmail.com', 'starmedia.com',
+// Domínios de email temporário/descartável (usados para fraude)
+const DISPOSABLE_EMAIL_DOMAINS = [
+  'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
+  '10minutemail.com', 'throwaway.email', 'fakeinbox.com', 'trashmail.com',
+  'yopmail.com', 'sharklasers.com', 'dispostable.com', 'getairmail.com',
+  'mailnesia.com', 'tempr.email', 'discard.email', 'spamgourmet.com',
+  'mytemp.email', 'mohmal.com', 'tempail.com', 'emailondeck.com',
+  'getnada.com', 'mintemail.com', 'mt2015.com', 'tmpmail.org',
 ];
 
-// Padrões suspeitos de domínios falsos
-const SUSPICIOUS_PATTERNS = [
-  /^[a-z]{2,4}\.[a-z]{2,3}$/i, // domínios muito curtos tipo "ab.com"
-  /^[a-z]+\d+\.[a-z]{2,3}$/i, // domínios com números aleatórios
-  /test/i, /fake/i, /temp/i, /spam/i, /trash/i, /throw/i,
-  /mailinator/i, /guerrilla/i, /10minute/i, /tempmail/i,
-  /yopmail/i, /sharklasers/i, /guerrillamail/i, /dispostable/i,
-];
-
-// Email validation helper - validação robusta
+// Email validation helper - valida formato e bloqueia emails descartáveis
 export const isValidEmail = (email: string): boolean => {
   const trimmedEmail = email.trim().toLowerCase();
   
-  // Formato básico
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Formato básico: usuario@dominio.extensao
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(trimmedEmail)) {
     return false;
   }
@@ -208,42 +189,14 @@ export const isValidEmail = (email: string): boolean => {
   const domain = trimmedEmail.split('@')[1];
   if (!domain) return false;
 
-  // Verifica se é um domínio conhecido/válido
-  if (VALID_DOMAINS.includes(domain)) {
-    return true;
-  }
-
-  // Verifica padrões suspeitos
-  for (const pattern of SUSPICIOUS_PATTERNS) {
-    if (pattern.test(domain)) {
-      return false;
-    }
-  }
-
-  // Domínio deve ter pelo menos 4 caracteres antes do TLD
-  const domainParts = domain.split('.');
-  if (domainParts[0].length < 4) {
+  // Bloqueia domínios de email temporário/descartável
+  if (DISPOSABLE_EMAIL_DOMAINS.includes(domain)) {
     return false;
   }
 
-  // Verifica se parece um domínio corporativo válido (tem estrutura razoável)
-  // Domínios válidos geralmente têm vogais e consoantes misturadas
-  const domainName = domainParts[0];
-  const hasVowels = /[aeiou]/i.test(domainName);
-  const hasConsonants = /[bcdfghjklmnpqrstvwxyz]/i.test(domainName);
-  
-  if (!hasVowels || !hasConsonants) {
-    return false;
-  }
-
-  // Verifica sequências de caracteres repetidos (aaaa, hhhh)
-  if (/(.)\1{3,}/.test(domainName)) {
-    return false;
-  }
-
-  // Verifica se não é só letras aleatórias (sem padrão de palavra real)
-  // Domínios com muitas consoantes seguidas são suspeitos
-  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(domainName)) {
+  // Extensão do domínio deve ter pelo menos 2 caracteres
+  const tld = domain.split('.').pop();
+  if (!tld || tld.length < 2) {
     return false;
   }
 
