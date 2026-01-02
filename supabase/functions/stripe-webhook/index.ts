@@ -11,7 +11,7 @@ const log = (step: string, data?: unknown) => {
   console.log(`[STRIPE-WEBHOOK][${timestamp}] ${step}`, data ? JSON.stringify(data) : "");
 };
 
-// UTMify config - SAME as track-purchase (this one works!)
+// UTMify config
 const UTMIFY_PIXEL_ID = "69541e567c5e5c96cc8e701a";
 const SOURCE_URL = "https://codpointsmobile.online/success";
 const UTMIFY_API_URL = "https://tracking.utmify.com.br/tracking/v1/events";
@@ -19,12 +19,10 @@ const UTMIFY_API_URL = "https://tracking.utmify.com.br/tracking/v1/events";
 serve(async (req) => {
   log("=== WEBHOOK CALLED ===", { 
     method: req.method,
-    url: req.url,
-    headers: Object.fromEntries(req.headers.entries())
+    url: req.url
   });
 
   if (req.method === "OPTIONS") {
-    log("CORS preflight");
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -36,13 +34,20 @@ serve(async (req) => {
     log("Environment check", {
       hasStripeKey: !!STRIPE_SECRET_KEY,
       hasWebhookSecret: !!STRIPE_WEBHOOK_SECRET,
-      webhookSecretPrefix: STRIPE_WEBHOOK_SECRET?.substring(0, 10) + "...",
       hasUtmifyKey: !!UTMIFY_API_KEY,
     });
 
     if (!STRIPE_SECRET_KEY) {
       log("ERROR: Missing STRIPE_SECRET_KEY");
       return new Response(JSON.stringify({ error: "STRIPE_SECRET_KEY not set" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    if (!UTMIFY_API_KEY) {
+      log("ERROR: Missing UTMIFY_API_KEY");
+      return new Response(JSON.stringify({ error: "UTMIFY_API_KEY not set" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
@@ -55,8 +60,7 @@ serve(async (req) => {
 
     log("Request details", { 
       bodyLength: body.length, 
-      hasSignature: !!signature,
-      signaturePrefix: signature?.substring(0, 20) + "..."
+      hasSignature: !!signature
     });
 
     let event: Stripe.Event;
@@ -67,10 +71,7 @@ serve(async (req) => {
         log("✅ Signature verification SUCCESS", { eventType: event.type, eventId: event.id });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        log("❌ SIGNATURE VERIFICATION FAILED", { 
-          error: errorMsg,
-          webhookSecretUsed: STRIPE_WEBHOOK_SECRET?.substring(0, 15) + "..."
-        });
+        log("❌ SIGNATURE VERIFICATION FAILED", { error: errorMsg });
         return new Response(JSON.stringify({ 
           error: "Webhook signature verification failed",
           details: errorMsg 
@@ -80,7 +81,7 @@ serve(async (req) => {
         });
       }
     } else {
-      log("⚠️ No signature verification (missing secret or signature)");
+      log("⚠️ No signature verification");
       event = JSON.parse(body);
     }
 
@@ -98,8 +99,15 @@ serve(async (req) => {
     const pi = event.data.object as Stripe.PaymentIntent;
     const meta = pi.metadata || {};
     
-    // Get email from multiple sources - create-payment-intent saves as "email" in metadata
-    const customerEmail = meta.email || meta.customer_email || (pi as any).receipt_email;
+    // Get email - priority: metadata.email > metadata.customer_email > receipt_email
+    let customerEmail = "";
+    if (meta.email && typeof meta.email === "string" && meta.email.trim() !== "") {
+      customerEmail = meta.email.trim();
+    } else if (meta.customer_email && typeof meta.customer_email === "string" && meta.customer_email.trim() !== "") {
+      customerEmail = meta.customer_email.trim();
+    } else if ((pi as any).receipt_email && typeof (pi as any).receipt_email === "string") {
+      customerEmail = (pi as any).receipt_email.trim();
+    }
 
     log("PaymentIntent details", {
       id: pi.id,
@@ -109,23 +117,18 @@ serve(async (req) => {
       packageId: meta.packageId,
       cpAmount: meta.cpAmount,
       packageName: meta.packageName,
-      receipt_email: (pi as any).receipt_email,
       metadata_keys: Object.keys(meta),
     });
 
-    // COD MOBILE SPECIFIC detection:
-    // COD uses: packageId (starts with "cp-") and cpAmount in metadata
-    // This is set by create-payment-intent for COD products
-    const hasCpPackageId = meta.packageId && meta.packageId.startsWith('cp-');
-    const hasCpAmount = !!meta.cpAmount;
-    
+    // COD MOBILE detection: packageId starts with "cp-" OR cpAmount exists
+    const hasCpPackageId = meta.packageId && typeof meta.packageId === "string" && meta.packageId.startsWith("cp-");
+    const hasCpAmount = meta.cpAmount && meta.cpAmount !== "";
     const isCodPayment = hasCpPackageId || hasCpAmount;
     
     if (!isCodPayment) {
-      log("⚠️ Not a COD Mobile payment (no cp- packageId or cpAmount), skipping", { 
+      log("⚠️ Not a COD Mobile payment, skipping", { 
         packageId: meta.packageId,
-        cpAmount: meta.cpAmount,
-        metadata_keys: Object.keys(meta)
+        cpAmount: meta.cpAmount
       });
       return new Response(JSON.stringify({ received: true, skipped: "not_cod" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -141,33 +144,24 @@ serve(async (req) => {
       amount: pi.amount
     });
 
-    // Send to UTMify using the SAME format as track-purchase (which works!)
-    if (!UTMIFY_API_KEY) {
-      log("❌ CRITICAL: UTMIFY_API_KEY not set!");
-      return new Response(JSON.stringify({ received: true, error: "no_utmify_key" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
     // Build UTM params from metadata
     const utmParams: Record<string, string> = {};
-    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id', 'fbclid', 'xcod'];
+    const utmKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id", "fbclid", "gclid", "ttclid", "xcod"];
     for (const key of utmKeys) {
-      if (meta[key]) {
+      if (meta[key] && typeof meta[key] === "string" && meta[key] !== "") {
         utmParams[key] = meta[key];
       }
     }
 
-    // Build lead object - only include email if it exists
-const leadObj: Record<string, unknown> = {
+    // Build lead object
+    const leadObj: Record<string, string> = {
       pixelId: UTMIFY_PIXEL_ID,
       parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
     };
     
-    // Only add email if we have one (avoid sending undefined/null)
-    if (customerEmail && customerEmail.trim() !== "") {
-      leadObj.email = customerEmail.trim();
+    // Only add email if valid
+    if (customerEmail !== "") {
+      leadObj.email = customerEmail;
     }
 
     const payload = {
@@ -182,18 +176,15 @@ const leadObj: Record<string, unknown> = {
       },
     };
 
-    log("Sending to UTMify", { 
-      url: UTMIFY_API_URL,
-      payload,
-    });
+    log("Sending to UTMify", { payload });
 
-    // Send to UTMify with retry logic
+    // Send to UTMify with 3 retries
     let success = false;
     let lastError = "";
     
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        log(`Attempt ${attempt}/3 sending to UTMify`);
+        log(`Attempt ${attempt}/3`);
         
         const utmRes = await fetch(UTMIFY_API_URL, {
           method: "POST",
@@ -209,35 +200,33 @@ const leadObj: Record<string, unknown> = {
           status: utmRes.status, 
           ok: utmRes.ok,
           body: utmText,
-          orderId: pi.id,
           attempt
         });
 
         if (utmRes.ok) {
-          log("✅ SUCCESS: Purchase tracked to UTMify via webhook!", { orderId: pi.id, attempt });
+          log("✅ SUCCESS: Purchase tracked to UTMify!", { orderId: pi.id });
           success = true;
           break;
         } else {
           lastError = `HTTP ${utmRes.status}: ${utmText}`;
-          log("❌ UTMify API error, will retry", { status: utmRes.status, body: utmText, attempt });
         }
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
-        log("❌ UTMify fetch error, will retry", { error: lastError, attempt });
+        log("Fetch error", { error: lastError, attempt });
       }
       
-      // Wait before retry (exponential backoff)
+      // Wait before retry
       if (attempt < 3) {
         await new Promise(r => setTimeout(r, attempt * 1000));
       }
     }
     
     if (!success) {
-      log("❌ FAILED after 3 attempts to send to UTMify", { orderId: pi.id, lastError });
+      log("❌ FAILED after 3 attempts", { orderId: pi.id, lastError });
     }
 
     return new Response(
-      JSON.stringify({ received: true, processed: true, paymentId: pi.id }),
+      JSON.stringify({ received: true, processed: true, success, paymentId: pi.id }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -245,7 +234,7 @@ const leadObj: Record<string, unknown> = {
     );
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    log("❌ CRITICAL ERROR", { error: errorMsg, stack: error instanceof Error ? error.stack : undefined });
+    log("❌ CRITICAL ERROR", { error: errorMsg });
     return new Response(JSON.stringify({ error: errorMsg }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

@@ -5,109 +5,66 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
+const log = (step: string, details?: unknown) => {
   const timestamp = new Date().toISOString();
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[TRACK-PURCHASE][${timestamp}] ${step}${detailsStr}`);
 };
 
-// UTMify Pixel ID for COD Mobile
+// UTMify config
 const UTMIFY_PIXEL_ID = "69541e567c5e5c96cc8e701a";
 const SOURCE_URL = "https://codpointsmobile.online/success";
 const UTMIFY_API_URL = "https://tracking.utmify.com.br/tracking/v1/events";
 
-// Retry function with exponential backoff
-async function fetchWithRetry(
-  url: string, 
-  options: RequestInit, 
-  maxRetries: number = 3
-): Promise<Response> {
-  let lastError: Error | null = null;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      logStep(`Attempt ${attempt}/${maxRetries}`, { url });
-      const response = await fetch(url, options);
-      if (response.ok) {
-        logStep(`Attempt ${attempt} succeeded`, { status: response.status });
-        return response;
-      }
-      // If not ok, log and retry
-      logStep(`Attempt ${attempt} failed with status ${response.status}`);
-      lastError = new Error(`HTTP ${response.status}`);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      logStep(`Attempt ${attempt} failed with error: ${lastError.message}`);
-    }
-    
-    // Wait before retry (exponential backoff: 1s, 2s, 4s)
-    if (attempt < maxRetries) {
-      const waitTime = Math.pow(2, attempt - 1) * 1000;
-      logStep(`Waiting ${waitTime}ms before retry`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-    }
-  }
-  
-  throw lastError || new Error('All retry attempts failed');
-}
-
 serve(async (req) => {
-  logStep("=== TRACK-PURCHASE INVOKED ===", { method: req.method });
+  log("=== TRACK-PURCHASE INVOKED ===", { method: req.method });
   
   if (req.method === "OPTIONS") {
-    logStep("CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logStep("Processing tracking request");
-    
     const { orderId, value, currency, email, utmData, source } = await req.json();
-    logStep("Request data received", { 
-      orderId, 
-      value, 
-      currency, 
-      email, 
-      hasUtmData: !!utmData,
-      source: source || 'unknown'
-    });
+    log("Request data", { orderId, value, currency, email, hasUtmData: !!utmData, source });
 
     // Validate required fields
     if (!orderId || value === undefined || value === null) {
-      logStep("VALIDATION ERROR: Missing required fields", { orderId, value });
+      log("VALIDATION ERROR: Missing required fields");
       throw new Error("Missing required fields: orderId or value");
     }
 
     const utmifyApiKey = Deno.env.get("UTMIFY_API_KEY");
     if (!utmifyApiKey) {
-      logStep("CRITICAL ERROR: UTMIFY_API_KEY not set - tracking will fail!");
+      log("CRITICAL ERROR: UTMIFY_API_KEY not set");
       throw new Error("UTMIFY_API_KEY not configured");
     }
-    logStep("UTMIFY_API_KEY verified");
     
-    // Build UTM parameters string - capture all possible UTM and click ID params
+    // Build UTM parameters
     const utmParams: Record<string, string> = {};
-    const utmKeys = [
-      'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
-      'fbclid', 'gclid', 'ttclid', 'kwai_click_id', 'xcod'
-    ];
+    const utmKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id", "fbclid", "gclid", "ttclid", "xcod"];
     
     if (utmData) {
       for (const key of utmKeys) {
-        if (utmData[key]) {
+        if (utmData[key] && typeof utmData[key] === "string" && utmData[key] !== "") {
           utmParams[key] = utmData[key];
         }
       }
     }
-    logStep("UTM params extracted", { count: Object.keys(utmParams).length, params: utmParams });
+    log("UTM params", { count: Object.keys(utmParams).length, params: utmParams });
+
+    // Build lead object - only include email if valid
+    const leadObj: Record<string, string> = {
+      pixelId: UTMIFY_PIXEL_ID,
+      parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
+    };
+    
+    if (email && typeof email === "string" && email.trim() !== "") {
+      leadObj.email = email.trim();
+    }
 
     const payload = {
       type: "Purchase",
-      lead: {
-        pixelId: UTMIFY_PIXEL_ID,
-        email: email || undefined,
-        parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
-      },
+      lead: leadObj,
       event: {
         sourceUrl: SOURCE_URL,
         pageTitle: "Compra COD Mobile CP",
@@ -117,43 +74,55 @@ serve(async (req) => {
       },
     };
 
-    logStep("Sending PURCHASE to UTMify", { 
-      url: UTMIFY_API_URL,
-      pixelId: UTMIFY_PIXEL_ID,
-      orderId,
-      value,
-      email 
-    });
+    log("Sending to UTMify", { payload });
 
-    const response = await fetchWithRetry(
-      UTMIFY_API_URL,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${utmifyApiKey}`,
-        },
-        body: JSON.stringify(payload),
-      },
-      3 // Max retries
-    );
+    // Send with retries
+    let success = false;
+    let lastError = "";
+    let responseData = "";
 
-    const responseData = await response.text();
-    logStep("UTMify RESPONSE", { 
-      status: response.status, 
-      ok: response.ok,
-      data: responseData,
-      orderId 
-    });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        log(`Attempt ${attempt}/3`);
+        
+        const response = await fetch(UTMIFY_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${utmifyApiKey}`,
+          },
+          body: JSON.stringify(payload),
+        });
 
-    if (response.ok) {
-      logStep("SUCCESS: Purchase tracked to UTMify!", { orderId, value, email });
+        responseData = await response.text();
+        log("UTMify response", { status: response.status, ok: response.ok, body: responseData, attempt });
+
+        if (response.ok) {
+          log("✅ SUCCESS: Purchase tracked!", { orderId });
+          success = true;
+          break;
+        } else {
+          lastError = `HTTP ${response.status}: ${responseData}`;
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : String(error);
+        log("Fetch error", { error: lastError, attempt });
+      }
+      
+      // Wait before retry
+      if (attempt < 3) {
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+      }
+    }
+
+    if (!success) {
+      log("❌ FAILED after 3 attempts", { orderId, lastError });
     }
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: "Purchase tracked successfully",
+        success, 
+        message: success ? "Purchase tracked successfully" : "Failed after retries",
         orderId,
         utmifyResponse: responseData
       }),
@@ -164,7 +133,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("CRITICAL ERROR", { message: errorMessage });
+    log("CRITICAL ERROR", { message: errorMessage });
     return new Response(
       JSON.stringify({ error: errorMessage, success: false }),
       {
