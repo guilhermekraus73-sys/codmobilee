@@ -49,7 +49,9 @@ serve(async (req) => {
     // Build tracking parameters
     const tracking = trackingParams || {};
     
-    // Build UTMify payload with CORRECT FORMAT
+    log("Tracking params received", tracking);
+    
+    // Build UTMify payload with CORRECT FORMAT including fbclid/gclid
     const utmifyPayload = {
       orderId: orderId,
       platform: "Stripe",
@@ -81,6 +83,10 @@ serve(async (req) => {
         utm_campaign: tracking.utm_campaign || null,
         utm_content: tracking.utm_content || null,
         utm_term: tracking.utm_term || null,
+        // IMPORTANTE: incluir fbclid e gclid para atribuição Meta/Google
+        fbclid: tracking.fbclid || null,
+        gclid: tracking.gclid || null,
+        ttclid: tracking.ttclid || null,
       },
       commission: {
         totalPriceInCents: priceInCents,

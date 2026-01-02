@@ -81,6 +81,23 @@ const Success = () => {
       // Track via server-side (edge function) - PRIMARY method with NEW FORMAT
       console.log('[UTMify] Sending to track-purchase edge function (PRIMARY)...');
       
+      // Merge tracking params from multiple sources
+      const mergedTrackingParams = {
+        src: trackingParams.src || null,
+        sck: trackingParams.sck || null,
+        utm_source: trackingParams.utm_source || utmData?.utm_source || null,
+        utm_medium: trackingParams.utm_medium || utmData?.utm_medium || null,
+        utm_campaign: trackingParams.utm_campaign || utmData?.utm_campaign || null,
+        utm_content: trackingParams.utm_content || utmData?.utm_content || null,
+        utm_term: trackingParams.utm_term || utmData?.utm_term || null,
+        // IMPORTANTE: incluir fbclid e gclid para atribuição Meta/Google
+        fbclid: trackingParams.fbclid || utmData?.fbclid || localStorage.getItem('utm_fbclid') || sessionStorage.getItem('utm_fbclid') || null,
+        gclid: trackingParams.gclid || utmData?.gclid || localStorage.getItem('utm_gclid') || sessionStorage.getItem('utm_gclid') || null,
+        ttclid: utmData?.ttclid || localStorage.getItem('utm_ttclid') || sessionStorage.getItem('utm_ttclid') || null,
+      };
+
+      console.log('[UTMify] Merged tracking params:', JSON.stringify(mergedTrackingParams));
+
       const trackingPayload = {
         orderId,
         value: parseFloat(packagePrice),
@@ -88,15 +105,7 @@ const Success = () => {
         email: customerEmail || '',
         name: customerName || 'Cliente',
         productName: packageName || 'COD Mobile CP',
-        trackingParams: {
-          ...trackingParams,
-          // Also include from utmData if available
-          utm_source: trackingParams.utm_source || utmData?.utm_source || null,
-          utm_medium: trackingParams.utm_medium || utmData?.utm_medium || null,
-          utm_campaign: trackingParams.utm_campaign || utmData?.utm_campaign || null,
-          utm_content: trackingParams.utm_content || utmData?.utm_content || null,
-          utm_term: trackingParams.utm_term || utmData?.utm_term || null,
-        },
+        trackingParams: mergedTrackingParams,
         source: 'checkout_success'
       };
 
