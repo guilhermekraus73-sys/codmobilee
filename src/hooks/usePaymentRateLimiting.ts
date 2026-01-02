@@ -166,8 +166,86 @@ export const usePaymentRateLimiting = () => {
   };
 };
 
-// Email validation helper
+// Lista de domínios válidos conhecidos
+const VALID_DOMAINS = [
+  // Gmail
+  'gmail.com', 'googlemail.com',
+  // Microsoft
+  'hotmail.com', 'hotmail.com.br', 'outlook.com', 'outlook.com.br', 'live.com', 'msn.com',
+  // Yahoo
+  'yahoo.com', 'yahoo.com.br', 'ymail.com',
+  // Apple
+  'icloud.com', 'me.com', 'mac.com',
+  // Proton
+  'protonmail.com', 'proton.me',
+  // Outros populares
+  'aol.com', 'zoho.com', 'mail.com', 'gmx.com', 'tutanota.com',
+  // Brasil
+  'uol.com.br', 'bol.com.br', 'terra.com.br', 'ig.com.br', 'globo.com', 'r7.com',
+  // Latam
+  'latinmail.com', 'starmedia.com',
+];
+
+// Padrões suspeitos de domínios falsos
+const SUSPICIOUS_PATTERNS = [
+  /^[a-z]{2,4}\.[a-z]{2,3}$/i, // domínios muito curtos tipo "ab.com"
+  /^[a-z]+\d+\.[a-z]{2,3}$/i, // domínios com números aleatórios
+  /test/i, /fake/i, /temp/i, /spam/i, /trash/i, /throw/i,
+  /mailinator/i, /guerrilla/i, /10minute/i, /tempmail/i,
+  /yopmail/i, /sharklasers/i, /guerrillamail/i, /dispostable/i,
+];
+
+// Email validation helper - validação robusta
 export const isValidEmail = (email: string): boolean => {
+  const trimmedEmail = email.trim().toLowerCase();
+  
+  // Formato básico
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
+  if (!emailRegex.test(trimmedEmail)) {
+    return false;
+  }
+
+  const domain = trimmedEmail.split('@')[1];
+  if (!domain) return false;
+
+  // Verifica se é um domínio conhecido/válido
+  if (VALID_DOMAINS.includes(domain)) {
+    return true;
+  }
+
+  // Verifica padrões suspeitos
+  for (const pattern of SUSPICIOUS_PATTERNS) {
+    if (pattern.test(domain)) {
+      return false;
+    }
+  }
+
+  // Domínio deve ter pelo menos 4 caracteres antes do TLD
+  const domainParts = domain.split('.');
+  if (domainParts[0].length < 4) {
+    return false;
+  }
+
+  // Verifica se parece um domínio corporativo válido (tem estrutura razoável)
+  // Domínios válidos geralmente têm vogais e consoantes misturadas
+  const domainName = domainParts[0];
+  const hasVowels = /[aeiou]/i.test(domainName);
+  const hasConsonants = /[bcdfghjklmnpqrstvwxyz]/i.test(domainName);
+  
+  if (!hasVowels || !hasConsonants) {
+    return false;
+  }
+
+  // Verifica sequências de caracteres repetidos (aaaa, hhhh)
+  if (/(.)\1{3,}/.test(domainName)) {
+    return false;
+  }
+
+  // Verifica se não é só letras aleatórias (sem padrão de palavra real)
+  // Domínios com muitas consoantes seguidas são suspeitos
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(domainName)) {
+    return false;
+  }
+
+  return true;
 };
