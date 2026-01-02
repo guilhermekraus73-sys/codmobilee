@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clock, Lock, Loader2, CreditCard } from 'lucide-react';
+import { Clock, Lock, Loader2, CreditCard, AlertTriangle } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
@@ -17,6 +17,7 @@ import {
   useStripe, 
   useElements 
 } from '@stripe/react-stripe-js';
+import { usePaymentRateLimiting, isValidEmail } from '@/hooks/usePaymentRateLimiting';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -50,6 +51,17 @@ const CheckoutForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [stripeReady, setStripeReady] = useState(false);
+  const [cooldownTimer, setCooldownTimer] = useState(0);
+
+  // Rate limiting
+  const { 
+    canAttemptPayment, 
+    recordAttempt, 
+    handleRateLimitResponse,
+    isBlocked,
+    blockReason,
+    getCooldownRemaining 
+  } = usePaymentRateLimiting();
 
   const packageData = {
     id: 'cp-4000',
@@ -58,6 +70,15 @@ const CheckoutForm = () => {
     total: 5500,
     price: '19.90'
   };
+
+  // Cooldown timer effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const remaining = getCooldownRemaining();
+      setCooldownTimer(remaining);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [getCooldownRemaining]);
 
   // Mark Stripe as ready when both stripe and elements are loaded
   useEffect(() => {
@@ -126,7 +147,6 @@ const CheckoutForm = () => {
           }
         }
 
-        // Save to both sessionStorage and localStorage for reliability
         const emailToSave = event.payerEmail || formData.email;
         const nameToSave = event.payerName || formData.fullName;
         sessionStorage.setItem('checkout_price', packageData.price);
@@ -178,19 +198,48 @@ const CheckoutForm = () => {
       return;
     }
 
+    // Validate email
+    if (!isValidEmail(formData.email)) {
+      setError('Por favor ingresa un correo electrónico válido.');
+      return;
+    }
+
+    // Get card last4 for rate limiting
+    const cardElement = elements.getElement(CardNumberElement);
+    if (!cardElement) {
+      setError('Error con el formulario de pago');
+      return;
+    }
+
+    // Check rate limits before proceeding
+    const rateCheck = canAttemptPayment();
+    if (!rateCheck.allowed) {
+      setError(rateCheck.reason || 'Demasiados intentos. Por favor espera.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
       const utmData = getUTMDataForConversion();
       
-      const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
+      // Use process-card-payment with rate limiting
+      const { data, error: fnError } = await supabase.functions.invoke('process-card-payment', {
         body: {
           packageId: packageData.id,
           email: formData.email,
           utmData,
         },
       });
+
+      // Handle rate limit response
+      if (data?.blocked) {
+        handleRateLimitResponse(data);
+        setError(data.error || 'Rate limit exceeded');
+        setIsLoading(false);
+        return;
+      }
 
       if (fnError) throw fnError;
       if (!data?.clientSecret) throw new Error('No se pudo crear el pago');
@@ -208,12 +257,14 @@ const CheckoutForm = () => {
         },
       });
 
+      // Record attempt after trying
+      recordAttempt();
+
       if (paymentError) {
         throw new Error(paymentError.message);
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        // Save to both sessionStorage and localStorage for reliability
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
         sessionStorage.setItem('checkout_email', formData.email);
@@ -226,6 +277,7 @@ const CheckoutForm = () => {
       }
     } catch (err) {
       console.error('Payment error:', err);
+      recordAttempt();
       setError(err instanceof Error ? err.message : 'Error al procesar el pago');
       setIsLoading(false);
     }
@@ -272,6 +324,22 @@ const CheckoutForm = () => {
       {/* Checkout Card */}
       <div className="px-4 pb-8">
         <div className="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-6">
+          {/* Blocked Warning */}
+          {isBlocked && (
+            <div className="mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              <span>{blockReason || 'Has excedido el límite de intentos.'}</span>
+            </div>
+          )}
+
+          {/* Cooldown Warning */}
+          {cooldownTimer > 0 && !isBlocked && (
+            <div className="mb-4 bg-yellow-100 border border-yellow-300 text-yellow-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              <span>Espera {cooldownTimer} segundos antes de intentar de nuevo.</span>
+            </div>
+          )}
+
           {/* Product Summary */}
           <div className="flex items-start gap-4 mb-6 pb-6 border-b border-gray-100">
             <div className="w-14 h-14 rounded-lg flex items-center justify-center overflow-hidden">
@@ -323,7 +391,7 @@ const CheckoutForm = () => {
             </div>
 
             {/* Apple Pay / Google Pay Button */}
-            {paymentRequest && (
+            {paymentRequest && !isBlocked && (
               <>
                 <div className="pt-2">
                   <PaymentRequestButtonElement 
@@ -368,6 +436,7 @@ const CheckoutForm = () => {
                   onChange={handleInputChange}
                   className="bg-white border-gray-300 h-12 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                   required
+                  disabled={isBlocked}
                 />
               </div>
 
@@ -419,13 +488,18 @@ const CheckoutForm = () => {
 
             <Button 
               type="submit"
-              disabled={isLoading || !stripe}
+              disabled={isLoading || !stripe || isBlocked || cooldownTimer > 0}
               className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-lg flex items-center justify-center gap-2 disabled:opacity-70"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Procesando...
+                </>
+              ) : cooldownTimer > 0 ? (
+                <>
+                  <Clock className="w-5 h-5" />
+                  Espera {cooldownTimer}s
                 </>
               ) : (
                 <>
