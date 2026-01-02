@@ -128,11 +128,15 @@ const CheckoutForm = () => {
 
         // Save to both sessionStorage and localStorage for reliability
         const emailToSave = event.payerEmail || formData.email;
+        const nameToSave = event.payerName || formData.fullName;
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
         sessionStorage.setItem('checkout_email', emailToSave);
+        sessionStorage.setItem('checkout_name', nameToSave);
+        sessionStorage.setItem('checkout_product_name', `${packageData.cp} CP + ${packageData.bonus} Bonus`);
         localStorage.setItem('last_checkout_price', packageData.price);
         localStorage.setItem('last_checkout_email', emailToSave);
+        localStorage.setItem('last_checkout_name', nameToSave);
         navigate(`/success?payment_intent=${paymentIntent?.id}`);
       } catch (err) {
         event.complete('fail');
@@ -223,8 +227,11 @@ const CheckoutForm = () => {
         sessionStorage.setItem('checkout_price', packageData.price);
         sessionStorage.setItem('checkout_package', packageData.id);
         sessionStorage.setItem('checkout_email', formData.email);
+        sessionStorage.setItem('checkout_name', formData.fullName);
+        sessionStorage.setItem('checkout_product_name', `${packageData.cp} CP + ${packageData.bonus} Bonus`);
         localStorage.setItem('last_checkout_price', packageData.price);
         localStorage.setItem('last_checkout_email', formData.email);
+        localStorage.setItem('last_checkout_name', formData.fullName);
         navigate(`/success?payment_intent=${paymentIntent.id}`);
       }
     } catch (err) {

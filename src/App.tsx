@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useUtmifyStripePixel, storeUtmParams } from "@/hooks/useUtmifyStripePixel";
 import Index from "./pages/Index";
 import Identificar from "./pages/Identificar";
 import Recharge from "./pages/Recharge";
@@ -15,9 +17,22 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Component to initialize UTMify
+const UtmifyInit = () => {
+  useUtmifyStripePixel();
+  
+  useEffect(() => {
+    // Store UTM params when user lands on page
+    storeUtmParams();
+  }, []);
+  
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <UtmifyInit />
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -32,7 +47,6 @@ const App = () => (
           <Route path="/success" element={<Success />} />
           <Route path="/quiz" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

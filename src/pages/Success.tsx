@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
 import { trackPurchase, getStoredUTMData } from '@/lib/utmify';
 import { supabase } from '@/integrations/supabase/client';
+import { getUtmParams } from '@/hooks/useUtmifyStripePixel';
 
 const Success = () => {
   const [searchParams] = useSearchParams();
@@ -27,8 +28,13 @@ const Success = () => {
       // Get package info from sessionStorage with fallbacks
       let packagePrice = sessionStorage.getItem('checkout_price');
       let customerEmail = sessionStorage.getItem('checkout_email');
+      let customerName = sessionStorage.getItem('checkout_name');
       const packageId = sessionStorage.getItem('checkout_package');
+      const packageName = sessionStorage.getItem('checkout_product_name');
+      
+      // Get UTM data from both sources
       const utmData = getStoredUTMData();
+      const trackingParams = getUtmParams(); // New UTMify format
 
       // If sessionStorage is empty, try to get from localStorage
       if (!packagePrice) {
@@ -36,6 +42,9 @@ const Success = () => {
       }
       if (!customerEmail) {
         customerEmail = localStorage.getItem('last_checkout_email');
+      }
+      if (!customerName) {
+        customerName = localStorage.getItem('last_checkout_name');
       }
 
       // If still no price, determine from package mapping
@@ -55,7 +64,10 @@ const Success = () => {
       console.log('[UTMify] Order ID:', orderId);
       console.log('[UTMify] Price:', packagePrice, 'USD');
       console.log('[UTMify] Email:', customerEmail || 'not provided');
+      console.log('[UTMify] Name:', customerName || 'not provided');
       console.log('[UTMify] Package:', packageId || 'unknown');
+      console.log('[UTMify] Product Name:', packageName || 'COD Mobile CP');
+      console.log('[UTMify] Tracking Params:', JSON.stringify(trackingParams));
       console.log('[UTMify] UTM Data:', JSON.stringify(utmData));
 
       // MÉTODO 1: Track via client-side (pixel) - may be blocked by ad blockers
@@ -66,7 +78,7 @@ const Success = () => {
         console.error('[UTMify] ❌ Client-side pixel error:', e);
       }
 
-      // Track via server-side (edge function) - PRIMARY method
+      // Track via server-side (edge function) - PRIMARY method with NEW FORMAT
       console.log('[UTMify] Sending to track-purchase edge function (PRIMARY)...');
       
       const trackingPayload = {
@@ -74,8 +86,18 @@ const Success = () => {
         value: parseFloat(packagePrice),
         currency: 'USD',
         email: customerEmail || '',
-        utmData: utmData || {},
-        source: 'checkout_success' // Identificador do funil COD Mobile
+        name: customerName || 'Cliente',
+        productName: packageName || 'COD Mobile CP',
+        trackingParams: {
+          ...trackingParams,
+          // Also include from utmData if available
+          utm_source: trackingParams.utm_source || utmData?.utm_source || null,
+          utm_medium: trackingParams.utm_medium || utmData?.utm_medium || null,
+          utm_campaign: trackingParams.utm_campaign || utmData?.utm_campaign || null,
+          utm_content: trackingParams.utm_content || utmData?.utm_content || null,
+          utm_term: trackingParams.utm_term || utmData?.utm_term || null,
+        },
+        source: 'checkout_success'
       };
 
       let trackingSuccess = false;
