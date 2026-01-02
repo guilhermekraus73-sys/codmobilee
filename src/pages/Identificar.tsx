@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useXcodUrl } from '@/hooks/useXcodParam';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShieldCheck, Loader2 } from 'lucide-react';
@@ -39,6 +40,7 @@ const nextPageImages = [
 const Identificar = () => {
   const [playerId, setPlayerId] = useState('');
   const navigate = useNavigate();
+  const { buildUrl } = useXcodUrl();
   const { isLoading, isReady } = useImagePreloader(pageImages, true);
 
   // Preload next page images when this page is ready
@@ -50,7 +52,7 @@ const Identificar = () => {
     e.preventDefault();
     if (playerId.trim()) {
       localStorage.setItem('codm_player_id', playerId);
-      navigate('/recharge');
+      navigate(buildUrl('/recharge'));
     }
   };
 

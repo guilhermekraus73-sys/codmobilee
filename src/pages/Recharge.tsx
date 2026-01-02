@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useXcodUrl } from '@/hooks/useXcodParam';
 import { Button } from '@/components/ui/button';
 import { Check, CreditCard, Loader2 } from 'lucide-react';
 import codmBanner from '@/assets/codm-banner.png';
@@ -72,6 +73,7 @@ const paymentMethods: PaymentMethod[] = [
 
 const Recharge = () => {
   const navigate = useNavigate();
+  const { buildUrl } = useXcodUrl();
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
@@ -99,7 +101,7 @@ const Recharge = () => {
 
   const handleContinue = () => {
     if (selectedPackage && selectedPayment) {
-      navigate(`/checkout${selectedPackage}`);
+      navigate(buildUrl(`/checkout${selectedPackage}`));
     }
   };
 
