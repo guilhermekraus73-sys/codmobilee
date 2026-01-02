@@ -17,13 +17,17 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Component to initialize UTMify
+// Component to initialize UTMify - must be inside Router to access URL
 const UtmifyInit = () => {
   useUtmifyStripePixel();
   
   useEffect(() => {
     // Store UTM params when user lands on page
-    storeUtmParams();
+    // This runs on every page load to capture params from ads
+    const captured = storeUtmParams();
+    if (captured) {
+      console.log('[UTMify] ✅ Tracking params captured from URL');
+    }
   }, []);
   
   return null;
@@ -32,10 +36,10 @@ const UtmifyInit = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <UtmifyInit />
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <UtmifyInit />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/identificar" element={<Identificar />} />

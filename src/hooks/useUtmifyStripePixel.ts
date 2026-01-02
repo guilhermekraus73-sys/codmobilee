@@ -58,10 +58,20 @@ export const getUtmParams = () => {
   const urlParams = new URLSearchParams(window.location.search);
   
   const getParam = (key: string): string => {
-    return urlParams.get(key) || localStorage.getItem(`utm_${key}`) || '';
+    // First check URL, then localStorage, then sessionStorage
+    const urlValue = urlParams.get(key);
+    if (urlValue) return urlValue;
+    
+    const localValue = localStorage.getItem(`utm_${key}`);
+    if (localValue) return localValue;
+    
+    const sessionValue = sessionStorage.getItem(`utm_${key}`);
+    if (sessionValue) return sessionValue;
+    
+    return '';
   };
 
-  return {
+  const params = {
     src: getParam('src') || getUtmifyLeadId(),
     sck: getParam('sck'),
     utm_source: getParam('utm_source'),
@@ -69,18 +79,35 @@ export const getUtmParams = () => {
     utm_campaign: getParam('utm_campaign'),
     utm_content: getParam('utm_content'),
     utm_term: getParam('utm_term'),
+    fbclid: getParam('fbclid'),
+    gclid: getParam('gclid'),
   };
+
+  console.log('[UTMify] getUtmParams:', params);
+  return params;
 };
 
-// Store UTM params when user lands on page
+// Store UTM params when user lands on page - MUST be called on every page
 export const storeUtmParams = () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const utmKeys = ['src', 'sck', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid'];
+  const utmKeys = ['src', 'sck', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid', 'ttclid'];
+  
+  let hasParams = false;
   
   utmKeys.forEach(key => {
     const value = urlParams.get(key);
     if (value) {
+      // Store in both localStorage AND sessionStorage for redundancy
       localStorage.setItem(`utm_${key}`, value);
+      sessionStorage.setItem(`utm_${key}`, value);
+      hasParams = true;
+      console.log(`[UTMify] Stored ${key}:`, value);
     }
   });
+
+  if (hasParams) {
+    console.log('[UTMify] ✅ UTM parameters captured and stored!');
+  }
+  
+  return hasParams;
 };
