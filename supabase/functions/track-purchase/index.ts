@@ -11,10 +11,8 @@ const log = (step: string, details?: unknown) => {
   console.log(`[TRACK-PURCHASE][${timestamp}] ${step}${detailsStr}`);
 };
 
-// UTMify config
-const UTMIFY_PIXEL_ID = "69541e567c5e5c96cc8e701a";
-const SOURCE_URL = "https://codpointsmobile.online/success";
-const UTMIFY_API_URL = "https://tracking.utmify.com.br/tracking/v1/events";
+// UTMify API - ENDPOINT CORRETO!
+const UTMIFY_API_URL = "https://api.utmify.com.br/api-credentials/orders";
 
 serve(async (req) => {
   log("=== TRACK-PURCHASE INVOKED ===", { method: req.method });
@@ -24,8 +22,8 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, value, currency, email, utmData, source } = await req.json();
-    log("Request data", { orderId, value, currency, email, hasUtmData: !!utmData, source });
+    const { orderId, value, currency, email, name, productName, trackingParams, source } = await req.json();
+    log("Request data", { orderId, value, currency, email, name, productName, hasTrackingParams: !!trackingParams, source });
 
     // Validate required fields
     if (!orderId || value === undefined || value === null) {
@@ -33,48 +31,67 @@ serve(async (req) => {
       throw new Error("Missing required fields: orderId or value");
     }
 
-    const utmifyApiKey = Deno.env.get("UTMIFY_API_KEY");
-    if (!utmifyApiKey) {
+    const utmifyApiToken = Deno.env.get("UTMIFY_API_KEY");
+    if (!utmifyApiToken) {
       log("CRITICAL ERROR: UTMIFY_API_KEY not set");
       throw new Error("UTMIFY_API_KEY not configured");
     }
-    
-    // Build UTM parameters
-    const utmParams: Record<string, string> = {};
-    const utmKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id", "fbclid", "gclid", "ttclid", "xcod"];
-    
-    if (utmData) {
-      for (const key of utmKeys) {
-        if (utmData[key] && typeof utmData[key] === "string" && utmData[key] !== "") {
-          utmParams[key] = utmData[key];
-        }
-      }
-    }
-    log("UTM params", { count: Object.keys(utmParams).length, params: utmParams });
 
-    // Build lead object - only include email if valid
-    const leadObj: Record<string, string> = {
-      pixelId: UTMIFY_PIXEL_ID,
-      parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
-    };
-    
-    if (email && typeof email === "string" && email.trim() !== "") {
-      leadObj.email = email.trim();
-    }
+    // Format date correctly: YYYY-MM-DD HH:MM:SS
+    const now = new Date();
+    const formattedDate = now.toISOString().replace('T', ' ').substring(0, 19);
+    log("Formatted date", { formattedDate });
 
-    const payload = {
-      type: "Purchase",
-      lead: leadObj,
-      event: {
-        sourceUrl: SOURCE_URL,
-        pageTitle: "Compra COD Mobile CP",
-        value: value,
-        currency: currency || "USD",
-        orderId: orderId,
+    // Convert value to cents (UTMify expects centavos/cents)
+    const priceInCents = Math.round(value * 100);
+    log("Price conversion", { originalValue: value, priceInCents });
+
+    // Build tracking parameters
+    const tracking = trackingParams || {};
+    
+    // Build UTMify payload with CORRECT FORMAT
+    const utmifyPayload = {
+      orderId: orderId,
+      platform: "Stripe",
+      paymentMethod: "credit_card",
+      status: "paid",
+      createdAt: formattedDate,
+      approvedDate: formattedDate,
+      refundedAt: null,
+      customer: {
+        name: name || "Cliente",
+        email: email || "",
+        phone: null,
+        document: null,
+        country: "US",
       },
+      products: [{
+        id: orderId,
+        name: productName || "COD Mobile CP",
+        planId: null,
+        planName: null,
+        quantity: 1,
+        priceInCents: priceInCents,
+      }],
+      trackingParameters: {
+        src: tracking.src || null,
+        sck: tracking.sck || null,
+        utm_source: tracking.utm_source || null,
+        utm_medium: tracking.utm_medium || null,
+        utm_campaign: tracking.utm_campaign || null,
+        utm_content: tracking.utm_content || null,
+        utm_term: tracking.utm_term || null,
+      },
+      commission: {
+        totalPriceInCents: priceInCents,
+        gatewayFeeInCents: 0,
+        userCommissionInCents: priceInCents,
+        currency: currency || "USD",
+      },
+      isTest: false,
     };
 
-    log("Sending to UTMify", { payload });
+    log("Sending to UTMify", { payload: utmifyPayload });
 
     // Send with retries
     let success = false;
@@ -89,9 +106,9 @@ serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${utmifyApiKey}`,
+            "x-api-token": utmifyApiToken, // HEADER CORRETO!
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(utmifyPayload),
         });
 
         responseData = await response.text();
@@ -103,6 +120,7 @@ serve(async (req) => {
           break;
         } else {
           lastError = `HTTP ${response.status}: ${responseData}`;
+          log("UTMify error response", { status: response.status, body: responseData });
         }
       } catch (error) {
         lastError = error instanceof Error ? error.message : String(error);
