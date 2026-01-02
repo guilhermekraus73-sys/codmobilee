@@ -89,7 +89,7 @@ serve(async (req) => {
     const utmParams: Record<string, string> = {};
     const utmKeys = [
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
-      'fbclid', 'gclid', 'ttclid', 'kwai_click_id'
+      'fbclid', 'gclid', 'ttclid', 'kwai_click_id', 'xcod'
     ];
     
     if (utmData) {

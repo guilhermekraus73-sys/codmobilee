@@ -2,7 +2,7 @@
 
 const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id'];
 const STORAGE_KEY = 'utmify_params';
-const CLICK_IDS = ['fbclid', 'gclid', 'ttclid', 'kwai_click_id'];
+const CLICK_IDS = ['fbclid', 'gclid', 'ttclid', 'kwai_click_id', 'xcod'];
 
 interface UTMData {
   utm_source?: string;
@@ -15,6 +15,7 @@ interface UTMData {
   gclid?: string;
   ttclid?: string;
   kwai_click_id?: string;
+  xcod?: string;
   landing_page?: string;
   referrer?: string;
   timestamp?: string;
