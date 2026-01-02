@@ -97,22 +97,45 @@ serve(async (req) => {
 
     const pi = event.data.object as Stripe.PaymentIntent;
     const meta = pi.metadata || {};
+    
+    // Get email from multiple sources (metadata OR top-level receipt_email)
+    const customerEmail = meta.customer_email || (pi as any).receipt_email || meta.email;
 
     log("PaymentIntent details", {
       id: pi.id,
       amount: pi.amount,
       currency: pi.currency,
-      customer_email: meta.customer_email,
+      customer_email: customerEmail,
       customer_name: meta.customer_name,
       diamonds: meta.diamonds,
       price_key: meta.price_key,
+      receipt_email: (pi as any).receipt_email,
+      metadata_keys: Object.keys(meta),
     });
 
-    // This webhook is specifically for COD payments
-    // Check for COD-specific metadata fields: diamonds, price_key, or customer_email
-    const isCodPayment = meta.diamonds || meta.price_key || meta.customer_email;
+    // ROBUST COD payment detection:
+    // 1. Has diamonds or price_key in metadata (new COD flow)
+    // 2. Has cpAmount or packageId in metadata (old COD flow) 
+    // 3. Has customer_email in metadata
+    // 4. Payment amount matches COD packages ($9, $19, $19.90, $29, etc.)
+    const codAmounts = [900, 990, 1900, 1990, 2900, 2990, 3900, 3990, 4900, 4990]; // cents
+    const isCodAmount = codAmounts.includes(pi.amount);
+    
+    const isCodPayment = 
+      meta.diamonds || 
+      meta.price_key || 
+      meta.customer_email ||
+      meta.cpAmount ||
+      meta.packageId ||
+      (isCodAmount && customerEmail); // COD amount + has email = likely COD
+    
     if (!isCodPayment) {
-      log("Not a COD payment (no diamonds/price_key/customer_email), skipping UTMify", { metadata: meta });
+      log("⚠️ Not detected as COD payment, skipping UTMify", { 
+        metadata: meta,
+        amount: pi.amount,
+        hasEmail: !!customerEmail,
+        isCodAmount
+      });
       return new Response(JSON.stringify({ received: true, skipped: "not_cod" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -121,7 +144,9 @@ serve(async (req) => {
     
     log("✅ COD payment detected, will send to UTMify", { 
       diamonds: meta.diamonds,
-      customer_email: meta.customer_email 
+      customer_email: customerEmail,
+      amount: pi.amount,
+      detection_reason: meta.diamonds ? "diamonds" : meta.price_key ? "price_key" : meta.customer_email ? "meta_email" : isCodAmount ? "cod_amount" : "other"
     });
 
     // Send to UTMify using the SAME format as track-purchase (which works!)
@@ -146,7 +171,7 @@ serve(async (req) => {
       type: "Purchase",
       lead: {
         pixelId: UTMIFY_PIXEL_ID,
-        email: meta.customer_email || undefined,
+        email: customerEmail || undefined,
         parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
       },
       event: {
