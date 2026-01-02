@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +48,7 @@ serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
 
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
@@ -159,13 +159,20 @@ serve(async (req) => {
       }
     }
 
+    // Build lead object - only include email if it exists
+const leadObj: Record<string, unknown> = {
+      pixelId: UTMIFY_PIXEL_ID,
+      parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
+    };
+    
+    // Only add email if we have one (avoid sending undefined/null)
+    if (customerEmail && customerEmail.trim() !== "") {
+      leadObj.email = customerEmail.trim();
+    }
+
     const payload = {
       type: "Purchase",
-      lead: {
-        pixelId: UTMIFY_PIXEL_ID,
-        email: customerEmail || undefined,
-        parameters: Object.keys(utmParams).length > 0 ? new URLSearchParams(utmParams).toString() : "",
-      },
+      lead: leadObj,
       event: {
         sourceUrl: SOURCE_URL,
         pageTitle: "Compra COD Mobile CP",
