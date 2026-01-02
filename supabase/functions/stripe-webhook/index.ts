@@ -187,9 +187,19 @@ serve(async (req) => {
         metadata: paymentIntent.metadata,
       });
 
-      // Only process COD Mobile payments (has packageId in metadata)
-      // Skip Free Fire payments (has diamonds in metadata) - handled by separate webhook
-      const isCodPayment = paymentIntent.metadata.packageId !== undefined;
+      // Only process COD Mobile payments (has packageId OR cpAmount in metadata)
+      // Skip Free Fire payments (has diamonds WITHOUT packageId/cpAmount) - handled by separate webhook
+      const isCodPayment = paymentIntent.metadata.packageId !== undefined || 
+                           paymentIntent.metadata.cpAmount !== undefined ||
+                           paymentIntent.metadata.packageName !== undefined;
+      
+      logStep("Payment type check", { 
+        isCodPayment,
+        hasPackageId: !!paymentIntent.metadata.packageId,
+        hasCpAmount: !!paymentIntent.metadata.cpAmount,
+        hasPackageName: !!paymentIntent.metadata.packageName,
+        hasDiamonds: !!paymentIntent.metadata.diamonds
+      });
       
       if (!isCodPayment) {
         logStep("Skipping non-COD payment (handled by other webhook)");
