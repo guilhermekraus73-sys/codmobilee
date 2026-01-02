@@ -1,6 +1,7 @@
 import { Trophy, RefreshCw, Percent, Target, XCircle, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { useXcodUrl } from '@/hooks/useXcodParam';
 
 interface QuizResultProps {
   score: {
@@ -12,6 +13,7 @@ interface QuizResultProps {
 }
 
 const QuizResult = ({ score, onRestart }: QuizResultProps) => {
+  const { buildUrl } = useXcodUrl();
   const isWinner = score.percentage >= 70;
 
   return (
@@ -83,7 +85,7 @@ const QuizResult = ({ score, onRestart }: QuizResultProps) => {
                 ¡Felicidades por haber acertado más del 70% de todo el quiz! Esto demuestra que eres realmente un súper jugador de Call of Duty Mobile, por eso liberamos nuestros paquetes de CP más vendidos con <span className="text-primary font-bold">70% de descuento</span>. ¡Garantiza ahora más de <span className="text-primary font-bold">5000 CP</span> prácticamente gratis!
               </p>
               <Link 
-                to="/identificar" 
+                to={buildUrl('/identificar')} 
                 className="btn-tactical inline-flex items-center gap-2 px-6 py-3 rounded-lg"
               >
                 <span className="relative z-10 flex items-center gap-2">
