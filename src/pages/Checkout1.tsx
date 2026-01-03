@@ -232,6 +232,8 @@ const CheckoutForm = () => {
         body: {
           packageId: packageData.id,
           email: formData.email,
+          fullName: formData.fullName,
+          country: 'CO', // Default to Colombia for LATAM audience
           utmData,
         },
       });

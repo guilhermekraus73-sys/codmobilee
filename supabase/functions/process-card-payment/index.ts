@@ -33,14 +33,14 @@ serve(async (req) => {
   try {
     logStep("Function started");
     
-    const { packageId, email, cardLast4, utmData } = await req.json();
+    const { packageId, email, cardLast4, utmData, fullName, country } = await req.json();
     
     // Get client IP from headers
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                      req.headers.get('x-real-ip') || 
                      'unknown';
     
-    logStep("Request data", { packageId, email, cardLast4, clientIp });
+    logStep("Request data", { packageId, email, cardLast4, clientIp, fullName, country });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -153,16 +153,23 @@ serve(async (req) => {
       const customers = await stripe.customers.list({ email, limit: 1 });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
+        // Update customer with name if provided
+        if (fullName) {
+          await stripe.customers.update(customerId, { name: fullName });
+        }
         logStep("Existing customer found", { customerId });
       } else {
-        const customer = await stripe.customers.create({ email });
+        const customer = await stripe.customers.create({ 
+          email,
+          name: fullName || undefined,
+        });
         customerId = customer.id;
         logStep("New customer created", { customerId });
       }
     }
 
-    // Create Payment Intent
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Create Payment Intent with shipping/billing info for better approval rates
+    const paymentIntentData: any = {
       amount: product.price,
       currency: "usd",
       customer: customerId,
@@ -173,12 +180,29 @@ serve(async (req) => {
         email: email || '',
         cardLast4: cardLast4 || '',
         clientIp,
+        country: country || '',
+        fullName: fullName || '',
         ...utmData,
       },
       automatic_payment_methods: {
         enabled: true,
       },
-    });
+    };
+
+    // Add shipping info if we have country - helps with fraud detection
+    if (country || fullName) {
+      paymentIntentData.shipping = {
+        name: fullName || 'Customer',
+        address: {
+          country: country || 'US',
+          line1: 'Digital Product',
+          city: 'Digital',
+          postal_code: '00000',
+        },
+      };
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
     logStep("Payment Intent created", { 
       paymentIntentId: paymentIntent.id,
