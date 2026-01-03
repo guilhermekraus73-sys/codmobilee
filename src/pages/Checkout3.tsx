@@ -6,6 +6,7 @@ import { Clock, Lock, Loader2, CreditCard, AlertTriangle } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
+import { detectCountry } from '@/hooks/useCountryDetection';
 import { supabase } from '@/integrations/supabase/client';
 import { loadStripe, PaymentRequest } from '@stripe/stripe-js';
 import { 
@@ -231,7 +232,7 @@ const CheckoutForm = () => {
           packageId: packageData.id,
           email: formData.email,
           fullName: formData.fullName,
-          country: 'CO', // Default to Colombia for LATAM audience
+          country: detectCountry(),
           utmData,
         },
       });

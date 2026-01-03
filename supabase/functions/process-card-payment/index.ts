@@ -190,14 +190,13 @@ serve(async (req) => {
     };
 
     // Add shipping info if we have country - helps with fraud detection
+    // Don't require postal code as it's not common in all LATAM countries
     if (country || fullName) {
       paymentIntentData.shipping = {
         name: fullName || 'Customer',
         address: {
-          country: country || 'US',
-          line1: 'Digital Product',
-          city: 'Digital',
-          postal_code: '00000',
+          country: country || 'CO',
+          line1: 'Digital Product Delivery',
         },
       };
     }
