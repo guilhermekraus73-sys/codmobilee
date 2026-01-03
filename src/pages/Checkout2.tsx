@@ -52,6 +52,7 @@ const CheckoutForm = () => {
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [stripeReady, setStripeReady] = useState(false);
   const [cooldownTimer, setCooldownTimer] = useState(0);
+  const [cardBrand, setCardBrand] = useState<string | null>(null);
 
   // Rate limiting
   const { 
@@ -446,7 +447,38 @@ const CheckoutForm = () => {
                   Número de tarjeta *
                 </label>
                 <div className="bg-white border-2 border-gray-300 rounded-lg p-3 h-12 flex items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-                  <CardNumberElement options={cardElementStyles} className="w-full" />
+                  <CardNumberElement 
+                    options={cardElementStyles} 
+                    className="flex-1" 
+                    onChange={(event) => {
+                      setCardBrand(event.brand && event.brand !== 'unknown' ? event.brand : null);
+                    }}
+                  />
+                  {cardBrand && (
+                    <div className="ml-2 flex-shrink-0">
+                      {cardBrand === 'visa' && (
+                        <img src="https://js.stripe.com/v3/fingerprinted/img/visa-729c05c240c4bdb47b03ac81d9945bfe.svg" alt="Visa" className="h-6" />
+                      )}
+                      {cardBrand === 'mastercard' && (
+                        <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" className="h-6" />
+                      )}
+                      {cardBrand === 'amex' && (
+                        <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="American Express" className="h-6" />
+                      )}
+                      {cardBrand === 'discover' && (
+                        <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac52cd46f89fa40a29a0bfb954e33173.svg" alt="Discover" className="h-6" />
+                      )}
+                      {cardBrand === 'diners' && (
+                        <img src="https://js.stripe.com/v3/fingerprinted/img/diners-fbcbd3360f8e3f629cdaa80e93abdb8b.svg" alt="Diners Club" className="h-6" />
+                      )}
+                      {cardBrand === 'jcb' && (
+                        <img src="https://js.stripe.com/v3/fingerprinted/img/jcb-271067874f755c9a33f18b2e73d17f24.svg" alt="JCB" className="h-6" />
+                      )}
+                      {cardBrand === 'unionpay' && (
+                        <img src="https://js.stripe.com/v3/fingerprinted/img/unionpay-8a10aefc7295216c338ba4e1224627a1.svg" alt="UnionPay" className="h-6" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
