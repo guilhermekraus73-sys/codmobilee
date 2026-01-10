@@ -7,12 +7,13 @@ import {
 } from "@/components/ui/select";
 
 export const CHECKOUT_COUNTRIES = [
-  { code: 'CO', name: 'Colombia', flag: '🇨🇴' },
   { code: 'MX', name: 'México', flag: '🇲🇽' },
+  { code: 'CO', name: 'Colombia', flag: '🇨🇴' },
   { code: 'PE', name: 'Perú', flag: '🇵🇪' },
   { code: 'GT', name: 'Guatemala', flag: '🇬🇹' },
-  { code: 'CL', name: 'Chile', flag: '🇨🇱' },
   { code: 'US', name: 'Estados Unidos', flag: '🇺🇸' },
+  { code: 'AR', name: 'Argentina', flag: '🇦🇷' },
+  { code: 'CL', name: 'Chile', flag: '🇨🇱' },
 ];
 
 interface CountrySelectorProps {
@@ -22,21 +23,30 @@ interface CountrySelectorProps {
 }
 
 const CountrySelector = ({ value, onChange, disabled }: CountrySelectorProps) => {
+  const selectedCountry = CHECKOUT_COUNTRIES.find(c => c.code === value);
+  
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="bg-gray-50 border-gray-200 h-12 text-gray-900">
-        <SelectValue placeholder="Selecciona tu país" />
+      <SelectTrigger className="bg-white border-2 border-gray-300 h-12 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+        <SelectValue>
+          {selectedCountry && (
+            <span className="flex items-center gap-2">
+              <span className="text-lg">{selectedCountry.flag}</span>
+              <span className="font-medium">{selectedCountry.name}</span>
+            </span>
+          )}
+        </SelectValue>
       </SelectTrigger>
-      <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+      <SelectContent className="bg-white border border-gray-300 shadow-xl z-50">
         {CHECKOUT_COUNTRIES.map((country) => (
           <SelectItem 
             key={country.code} 
             value={country.code}
-            className="cursor-pointer hover:bg-gray-100"
+            className="cursor-pointer hover:bg-gray-100 py-3"
           >
-            <span className="flex items-center gap-2">
-              <span>{country.flag}</span>
-              <span>{country.name}</span>
+            <span className="flex items-center gap-3">
+              <span className="text-lg">{country.flag}</span>
+              <span className="font-medium text-gray-900">{country.name}</span>
             </span>
           </SelectItem>
         ))}
