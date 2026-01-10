@@ -6,8 +6,6 @@ import { Clock, Lock, Loader2, CreditCard, AlertTriangle } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
-import { getDefaultCheckoutCountry } from '@/hooks/useCountryDetection';
-import CountrySelector from '@/components/CountrySelector';
 import { supabase } from '@/integrations/supabase/client';
 import { loadStripe, PaymentRequest } from '@stripe/stripe-js';
 import { 
@@ -48,8 +46,8 @@ const CheckoutForm = () => {
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
+    postalCode: '',
   });
-  const [selectedCountry, setSelectedCountry] = useState(() => getDefaultCheckoutCountry());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
@@ -236,7 +234,7 @@ const CheckoutForm = () => {
           packageId: packageData.id,
           email: formData.email,
           fullName: formData.fullName,
-          country: selectedCountry,
+          postalCode: formData.postalCode,
           utmData,
         },
       });
@@ -520,14 +518,19 @@ const CheckoutForm = () => {
                 </div>
               </div>
 
-              {/* Country Selector */}
+              {/* Postal Code / CEP */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  País de la tarjeta
+                  Código postal / CEP *
                 </label>
-                <CountrySelector
-                  value={selectedCountry}
-                  onChange={setSelectedCountry}
+                <Input
+                  type="text"
+                  name="postalCode"
+                  placeholder="Ingresa tu código postal"
+                  value={formData.postalCode}
+                  onChange={handleInputChange}
+                  className="bg-white border-gray-300 h-12 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                  required
                   disabled={isBlocked}
                 />
               </div>
