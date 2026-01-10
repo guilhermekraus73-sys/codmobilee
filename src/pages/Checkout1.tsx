@@ -6,7 +6,8 @@ import { Clock, Lock, Loader2, CreditCard, AlertTriangle } from 'lucide-react';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
-import { detectCountry } from '@/hooks/useCountryDetection';
+import { getDefaultCheckoutCountry } from '@/hooks/useCountryDetection';
+import CountrySelector from '@/components/CountrySelector';
 import { supabase } from '@/integrations/supabase/client';
 import { loadStripe, PaymentRequest } from '@stripe/stripe-js';
 import { 
@@ -48,6 +49,7 @@ const CheckoutForm = () => {
     email: '',
     fullName: '',
   });
+  const [selectedCountry, setSelectedCountry] = useState(() => getDefaultCheckoutCountry());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
@@ -234,7 +236,7 @@ const CheckoutForm = () => {
           packageId: packageData.id,
           email: formData.email,
           fullName: formData.fullName,
-          country: detectCountry(),
+          country: selectedCountry,
           utmData,
         },
       });
@@ -404,7 +406,16 @@ const CheckoutForm = () => {
               />
             </div>
 
-            {/* Apple Pay / Google Pay Button */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                País
+              </label>
+              <CountrySelector
+                value={selectedCountry}
+                onChange={setSelectedCountry}
+                disabled={isBlocked}
+              />
+            </div>
             {paymentRequest && !isBlocked && (
               <>
                 <div className="pt-2">

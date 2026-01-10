@@ -63,7 +63,18 @@ export const SUPPORTED_COUNTRIES = [
   { code: 'CO', name: 'Colombia', flag: '🇨🇴' },
   { code: 'MX', name: 'México', flag: '🇲🇽' },
   { code: 'PE', name: 'Perú', flag: '🇵🇪' },
-  { code: 'AR', name: 'Argentina', flag: '🇦🇷' },
   { code: 'GT', name: 'Guatemala', flag: '🇬🇹' },
+  { code: 'CL', name: 'Chile', flag: '🇨🇱' },
   { code: 'US', name: 'Estados Unidos', flag: '🇺🇸' },
 ];
+
+// Check if a country code is in the supported checkout countries
+export const isCheckoutCountry = (code: string): boolean => {
+  return ['CO', 'MX', 'PE', 'GT', 'CL', 'US'].includes(code);
+};
+
+// Get default country for checkout (detects or defaults to CO)
+export const getDefaultCheckoutCountry = (): string => {
+  const detected = detectCountry();
+  return isCheckoutCountry(detected) ? detected : 'CO';
+};
