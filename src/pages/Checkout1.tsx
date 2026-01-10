@@ -406,16 +406,7 @@ const CheckoutForm = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                País
-              </label>
-              <CountrySelector
-                value={selectedCountry}
-                onChange={setSelectedCountry}
-                disabled={isBlocked}
-              />
-            </div>
+            {/* Apple Pay / Google Pay Button */}
             {paymentRequest && !isBlocked && (
               <>
                 <div className="pt-2">
@@ -527,6 +518,18 @@ const CheckoutForm = () => {
                     <CardCvcElement options={cardElementStyles} className="w-full" />
                   </div>
                 </div>
+              </div>
+
+              {/* Country Selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  País de la tarjeta
+                </label>
+                <CountrySelector
+                  value={selectedCountry}
+                  onChange={setSelectedCountry}
+                  disabled={isBlocked}
+                />
               </div>
 
               <p className="text-xs text-gray-500 text-center">
