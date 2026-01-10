@@ -48,6 +48,7 @@ const CheckoutForm = () => {
     fullName: '',
     postalCode: '',
   });
+  const [detectedCountry, setDetectedCountry] = useState<string>('US');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
@@ -167,6 +168,23 @@ const CheckoutForm = () => {
     });
   }, [stripe, formData.email, navigate]);
 
+  // Detect country from IP on mount
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        if (data.country_code) {
+          setDetectedCountry(data.country_code);
+          console.log('[Checkout3] Country detected:', data.country_code);
+        }
+      } catch (error) {
+        console.log('[Checkout3] Could not detect country, using default');
+      }
+    };
+    detectCountry();
+  }, []);
+
   useEffect(() => {
     initUTMTracking();
     trackPageView('checkout3');
@@ -233,6 +251,7 @@ const CheckoutForm = () => {
           email: formData.email,
           fullName: formData.fullName,
           postalCode: formData.postalCode,
+          country: detectedCountry,
           utmData,
         },
       });
@@ -505,10 +524,10 @@ const CheckoutForm = () => {
                 </div>
               </div>
 
-              {/* Postal Code / CEP */}
+              {/* Postal Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Código postal / CEP *
+                  Código postal *
                 </label>
                 <Input
                   type="text"

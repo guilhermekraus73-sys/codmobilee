@@ -33,14 +33,14 @@ serve(async (req) => {
   try {
     logStep("Function started");
     
-    const { packageId, email, cardLast4, utmData, fullName, country } = await req.json();
+    const { packageId, email, cardLast4, utmData, fullName, country, postalCode } = await req.json();
     
     // Get client IP from headers
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                      req.headers.get('x-real-ip') || 
                      'unknown';
     
-    logStep("Request data", { packageId, email, cardLast4, clientIp, fullName, country });
+    logStep("Request data", { packageId, email, cardLast4, clientIp, fullName, country, postalCode });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -181,6 +181,7 @@ serve(async (req) => {
         cardLast4: cardLast4 || '',
         clientIp,
         country: country || '',
+        postalCode: postalCode || '',
         fullName: fullName || '',
         ...utmData,
       },
@@ -189,13 +190,13 @@ serve(async (req) => {
       },
     };
 
-    // Add shipping info if we have country - helps with fraud detection
-    // Don't require postal code as it's not common in all LATAM countries
-    if (country || fullName) {
+    // Add shipping info with country and postal code - helps with fraud detection and approval rates
+    if (country || fullName || postalCode) {
       paymentIntentData.shipping = {
         name: fullName || 'Customer',
         address: {
-          country: country || 'CO',
+          country: country || 'US',
+          postal_code: postalCode || undefined,
           line1: 'Digital Product Delivery',
         },
       };
