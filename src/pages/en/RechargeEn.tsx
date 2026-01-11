@@ -63,12 +63,7 @@ interface PaymentMethod {
 
 const paymentMethods: PaymentMethod[] = [
   { id: 'card', name: 'Credit / Debit', brands: ['ELO', 'VISA', 'MC', 'AMEX'] },
-  { id: 'nequi', name: 'NEQUI', logo: paymentNequi },
-  { id: 'yape', name: 'Yape', logo: paymentYape },
-  { id: 'mercadopago', name: 'MercadoPago', logo: paymentMercadopago },
-  { id: 'efecty', name: 'Efecty Bancolombia', logo: paymentEfecty },
   { id: 'paypal', name: 'PayPal', logo: paymentPaypal },
-  { id: 'pse', name: 'PSE', logo: paymentPse },
 ];
 
 const RechargeEn = () => {
@@ -237,7 +232,7 @@ const RechargeEn = () => {
             <h2 className="text-white font-semibold text-lg">Payment Method</h2>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="flex justify-center gap-4">
             {paymentMethods.map((method) => (
               <button
                 key={method.id}
