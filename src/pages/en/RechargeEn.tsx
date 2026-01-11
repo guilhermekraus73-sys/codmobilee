@@ -251,13 +251,32 @@ const RechargeEn = () => {
                 {method.id === 'card' ? (
                   <>
                     <CreditCard className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                    <p className="text-white text-sm font-medium">{method.name}</p>
-                    <div className="flex items-center justify-center gap-1 mt-1 flex-wrap">
-                      {method.brands?.map((brand) => (
-                        <span key={brand} className="text-[10px] text-gray-400 bg-gray-800 px-1 rounded">
-                          {brand}
-                        </span>
-                      ))}
+                    <p className="text-white text-sm font-medium mb-2">{method.name}</p>
+                    <div className="flex items-center justify-center gap-2">
+                      {/* Visa */}
+                      <svg className="h-6 w-auto" viewBox="0 0 48 16" fill="none">
+                        <rect width="48" height="16" rx="2" fill="#1A1F71"/>
+                        <path d="M19.5 12.5L21.5 3.5H24L22 12.5H19.5Z" fill="white"/>
+                        <path d="M30.5 3.7C30 3.5 29.2 3.3 28.2 3.3C25.7 3.3 24 4.5 24 6.2C24 7.5 25.2 8.2 26.1 8.6C27 9 27.3 9.3 27.3 9.7C27.3 10.3 26.6 10.6 26 10.6C25.1 10.6 24.6 10.5 23.8 10.1L23.5 10L23.2 11.8C23.8 12.1 24.8 12.3 25.9 12.3C28.6 12.3 30.2 11.1 30.2 9.3C30.2 8.3 29.6 7.5 28.3 6.9C27.5 6.5 27 6.2 27 5.8C27 5.4 27.4 5 28.2 5C28.9 5 29.5 5.1 29.9 5.3L30.1 5.4L30.5 3.7Z" fill="white"/>
+                        <path d="M34.5 3.5C34 3.5 33.6 3.7 33.4 4.2L29.5 12.5H32.2L32.7 11H36L36.3 12.5H38.7L36.6 3.5H34.5ZM33.4 9.2C33.6 8.6 34.5 6.2 34.5 6.2C34.5 6.2 34.7 5.6 34.8 5.2L35 6.1C35 6.1 35.6 8.7 35.7 9.2H33.4Z" fill="white"/>
+                        <path d="M17.5 3.5L15 9.5L14.7 8.1C14.2 6.5 12.7 4.8 11 3.9L13.3 12.5H16L20 3.5H17.5Z" fill="white"/>
+                        <path d="M12.5 3.5H8.5L8.5 3.7C11.7 4.5 13.8 6.5 14.5 8.8L13.7 4.3C13.6 3.8 13.1 3.5 12.5 3.5Z" fill="#F9A51A"/>
+                      </svg>
+                      {/* Mastercard */}
+                      <svg className="h-6 w-auto" viewBox="0 0 48 16" fill="none">
+                        <rect width="48" height="16" rx="2" fill="#000"/>
+                        <circle cx="19" cy="8" r="5" fill="#EB001B"/>
+                        <circle cx="29" cy="8" r="5" fill="#F79E1B"/>
+                        <path d="M24 4.5C25.3 5.5 26 6.7 26 8C26 9.3 25.3 10.5 24 11.5C22.7 10.5 22 9.3 22 8C22 6.7 22.7 5.5 24 4.5Z" fill="#FF5F00"/>
+                      </svg>
+                      {/* Amex */}
+                      <svg className="h-6 w-auto" viewBox="0 0 48 16" fill="none">
+                        <rect width="48" height="16" rx="2" fill="#006FCF"/>
+                        <path d="M8 11L10.5 5H12.5L15 11H13L12.5 9.8H10.5L10 11H8ZM11 8.5H12L11.5 6.5L11 8.5Z" fill="white"/>
+                        <path d="M15.5 11V5H18.5L19.5 8.5L20.5 5H23.5V11H21.5V7L20 11H19L17.5 7V11H15.5Z" fill="white"/>
+                        <path d="M24.5 11V5H29.5V6.5H26.5V7.3H29.3V8.7H26.5V9.5H29.5V11H24.5Z" fill="white"/>
+                        <path d="M30.5 11L33 8L30.5 5H33L34.5 7L36 5H38.5L36 8L38.5 11H36L34.5 9L33 11H30.5Z" fill="white"/>
+                      </svg>
                     </div>
                   </>
                 ) : (
@@ -265,7 +284,7 @@ const RechargeEn = () => {
                     <img 
                       src={method.logo} 
                       alt={method.name} 
-                      className="h-10 mx-auto mb-2 object-contain"
+                      className="h-12 mx-auto mb-2 object-contain"
                     />
                     <p className="text-white text-sm font-medium">{method.name}</p>
                   </>
