@@ -22,7 +22,7 @@ const SuccessEn = () => {
         const productName = sessionStorage.getItem('checkout_product_name');
         
         if (price) {
-          trackPurchase(parseFloat(price), 'USD', paymentIntentId || sessionId || '');
+          trackPurchase(paymentIntentId || sessionId || '', parseFloat(price), 'USD');
         }
         
         const utmData = getStoredUTMData();
