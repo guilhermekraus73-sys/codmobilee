@@ -14,6 +14,14 @@ import Checkout2 from "./pages/Checkout2";
 import Checkout3 from "./pages/Checkout3";
 import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
+// English pages
+import QuizEn from "./pages/en/QuizEn";
+import IdentifyEn from "./pages/en/IdentifyEn";
+import RechargeEn from "./pages/en/RechargeEn";
+import Checkout1En from "./pages/en/Checkout1En";
+import Checkout2En from "./pages/en/Checkout2En";
+import Checkout3En from "./pages/en/Checkout3En";
+import SuccessEn from "./pages/en/SuccessEn";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +58,15 @@ const App = () => (
           <Route path="/checkout3" element={<Checkout3 />} />
           <Route path="/success" element={<Success />} />
           <Route path="/quiz" element={<Index />} />
+          {/* English routes */}
+          <Route path="/en" element={<QuizEn />} />
+          <Route path="/en/quiz" element={<QuizEn />} />
+          <Route path="/en/identify" element={<IdentifyEn />} />
+          <Route path="/en/recharge" element={<RechargeEn />} />
+          <Route path="/en/checkout1" element={<Checkout1En />} />
+          <Route path="/en/checkout2" element={<Checkout2En />} />
+          <Route path="/en/checkout3" element={<Checkout3En />} />
+          <Route path="/en/success" element={<SuccessEn />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
