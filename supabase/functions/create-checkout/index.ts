@@ -61,7 +61,7 @@ serve(async (req) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `COD Mobile - ${product.name}`,
+              name: "Manual del jugador ganador",
               description: `${product.cp} CP total para Call of Duty Mobile`,
               images: ["https://upload.wikimedia.org/wikipedia/en/8/87/Call_of_Duty_Mobile_cover.jpg"],
             },
