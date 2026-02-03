@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const UTMIFY_PIXEL_ID = "69541e567c5e5c96cc8e701a";
+const UTMIFY_PIXEL_ID = "694319ad74dd503618cd6322";
 
 export const useUtmifyStripePixel = () => {
   useEffect(() => {
