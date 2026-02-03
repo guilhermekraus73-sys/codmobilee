@@ -69,7 +69,7 @@ serve(async (req) => {
       },
       products: [{
         id: "produto-2",
-        name: "[Produto 2] " + (productName || "COD Mobile CP"),
+        name: "Produto 2",
         planId: "produto-2",
         planName: "Produto 2",
         quantity: 1,
