@@ -14,9 +14,9 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
 
 // Product configuration
 const PRODUCTS = {
-  1: { name: "800 CP + 600 Bonus", price: 900, cp: 1400 }, // $9.00 in cents
-  2: { name: "1600 CP + 1200 Bonus", price: 1590, cp: 2800 }, // $15.90 in cents
-  3: { name: "4000 CP + 1500 Bonus", price: 1990, cp: 5500 }, // $19.90 in cents
+  1: { name: "800 CP + 600 Bonus", price: 900, cp: 1400, tier: "Start" },
+  2: { name: "1600 CP + 1200 Bonus", price: 1590, cp: 2800, tier: "Plus" },
+  3: { name: "4000 CP + 1500 Bonus", price: 1990, cp: 5500, tier: "Pro" },
 };
 
 serve(async (req) => {
@@ -61,8 +61,8 @@ serve(async (req) => {
       price_data: {
             currency: "usd",
             product_data: {
-              name: "Guía Estratégica del Jugador",
-              description: `Guía completa con ${product.cp} créditos premium`,
+              name: `Guía Estratégica del Jugador - ${product.tier}`,
+              description: `Edición ${product.tier}`,
               images: ["https://upload.wikimedia.org/wikipedia/en/8/87/Call_of_Duty_Mobile_cover.jpg"],
             },
             unit_amount: product.price,
