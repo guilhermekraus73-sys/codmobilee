@@ -58,11 +58,11 @@ serve(async (req) => {
       payment_method_types: ["card"],
       line_items: [
         {
-          price_data: {
+      price_data: {
             currency: "usd",
             product_data: {
-              name: "Manual del jugador ganador",
-              description: `${product.cp} CP total para Call of Duty Mobile`,
+              name: "Guía Estratégica del Jugador",
+              description: `Guía completa con ${product.cp} créditos premium`,
               images: ["https://upload.wikimedia.org/wikipedia/en/8/87/Call_of_Duty_Mobile_cover.jpg"],
             },
             unit_amount: product.price,
