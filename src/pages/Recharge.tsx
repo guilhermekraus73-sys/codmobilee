@@ -189,17 +189,19 @@ const Recharge = () => {
                 onClick={() => setSelectedPackage(pkg.id)}
                 className={`relative rounded-xl p-3 sm:p-4 text-center transition-all ${
                   selectedPackage === pkg.id
-                    ? 'bg-primary/10 border-2 border-primary shadow-lg shadow-primary/20'
-                    : 'bg-white border border-gray-200 hover:border-primary/50'
+                    ? 'bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20'
+                    : 'bg-[#1a1a1a] border border-gray-700 hover:border-primary/50'
                 }`}
               >
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  <span className="text-primary text-lg">💎</span>
-                  <p className="text-gray-900 font-bold text-base sm:text-xl">{(pkg.cp + pkg.bonus).toLocaleString()}</p>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2">
+                  <img src={cpCoinsStack} alt="CP Coins" className="w-full h-full object-contain" />
                 </div>
+
+                <p className="text-white font-bold text-base sm:text-xl mb-1">{(pkg.cp + pkg.bonus).toLocaleString()}</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs mb-2">CP</p>
                 
                 <p className="text-primary font-bold text-sm sm:text-lg mb-1">US$ {pkg.price.toFixed(2)}</p>
-                <p className="text-gray-500 text-[11px] sm:text-xs">+ Bonus {pkg.bonus.toLocaleString()}</p>
+                <p className="text-yellow-400 text-[10px] sm:text-xs font-medium">+ Bonus {pkg.bonus.toLocaleString()}</p>
               </button>
             ))}
           </div>
