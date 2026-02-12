@@ -49,9 +49,9 @@ interface CpPackage {
 }
 
 const cpPackages: CpPackage[] = [
-  { id: 1, cp: 800, bonus: 600, price: 9.00 },
-  { id: 2, cp: 1600, bonus: 1200, price: 15.90 },
-  { id: 3, cp: 4000, bonus: 1500, price: 19.90, highlight: true },
+  { id: 1, cp: 1200, bonus: 1200, price: 9.90 },
+  { id: 2, cp: 2500, bonus: 2500, price: 16.90 },
+  { id: 3, cp: 5000, bonus: 5000, price: 19.90, highlight: true },
 ];
 
 interface PaymentMethod {
