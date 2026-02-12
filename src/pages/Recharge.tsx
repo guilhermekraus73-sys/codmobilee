@@ -187,35 +187,19 @@ const Recharge = () => {
               <button
                 key={pkg.id}
                 onClick={() => setSelectedPackage(pkg.id)}
-                className={`relative rounded-xl p-2 sm:p-4 text-center transition-all ${
+                className={`relative rounded-xl p-3 sm:p-4 text-center transition-all ${
                   selectedPackage === pkg.id
-                    ? 'bg-primary/20 border-2 border-primary'
-                    : pkg.highlight
-                    ? 'bg-gradient-to-b from-amber-900/40 to-[#1a1a1a] border border-amber-600/50 hover:border-amber-500'
-                    : 'bg-[#1a1a1a] border border-gray-700 hover:border-gray-500'
+                    ? 'bg-primary/10 border-2 border-primary shadow-lg shadow-primary/20'
+                    : 'bg-white border border-gray-200 hover:border-primary/50'
                 }`}
               >
-                {/* Small badge at top */}
-                <div className="bg-red-600 text-white text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded inline-block mb-1 sm:mb-2">
-                  +100% WEB BONUS
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <span className="text-primary text-lg">💎</span>
+                  <p className="text-gray-900 font-bold text-base sm:text-xl">{(pkg.cp + pkg.bonus).toLocaleString()}</p>
                 </div>
                 
-                <p className="text-white font-bold text-sm sm:text-lg mb-1 sm:mb-2">{pkg.cp.toLocaleString()} CP</p>
-                
-                <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5">{pkg.cp} CP</p>
-                <p className="text-yellow-400 font-semibold text-xs sm:text-sm mb-1 sm:mb-2">
-                  +{pkg.bonus.toLocaleString()} BÔNUS
-                </p>
-                <p className="text-green-400 text-[9px] sm:text-xs font-medium">
-                  Total: {(pkg.cp + pkg.bonus).toLocaleString()} CP
-                </p>
-
-                <div className="w-10 h-10 sm:w-16 sm:h-16 mx-auto mb-1 sm:mb-3">
-                  <img src={cpCoinsStack} alt="CP Coins" className="w-full h-full object-contain" />
-                </div>
-
-                <p className="text-primary font-bold text-sm sm:text-xl">US$ {pkg.price.toFixed(2)}</p>
-                <p className="text-red-400 text-[10px] sm:text-xs">Finaliza: 21d 3h 17m</p>
+                <p className="text-primary font-bold text-sm sm:text-lg mb-1">US$ {pkg.price.toFixed(2)}</p>
+                <p className="text-gray-500 text-[11px] sm:text-xs">+ Bonus {pkg.bonus.toLocaleString()}</p>
               </button>
             ))}
           </div>
