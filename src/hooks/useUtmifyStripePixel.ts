@@ -33,19 +33,40 @@ export const useUtmifyStripePixel = () => {
   }, []);
 };
 
-// Get UTMify lead ID from localStorage
+// Get UTMify lead ID from localStorage - check ALL possible keys the pixel might use
 export const getUtmifyLeadId = (): string => {
   try {
-    const utmifyData = localStorage.getItem('utmify_lead');
-    if (utmifyData) {
-      const parsed = JSON.parse(utmifyData);
-      return parsed._id || '';
+    // Check all possible UTMify storage keys
+    const possibleKeys = ['utmify_lead', 'utmify_pixel_data', '_utmify', 'utmify'];
+    for (const key of possibleKeys) {
+      const data = localStorage.getItem(key);
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed._id) return parsed._id;
+          if (parsed.id) return parsed.id;
+          if (parsed.lead_id) return parsed.lead_id;
+          if (typeof parsed === 'string') return parsed;
+        } catch {
+          // Might be a plain string
+          if (data.length > 5 && data.length < 50) return data;
+        }
+      }
     }
     
-    const pixelData = localStorage.getItem('utmify_pixel_data');
-    if (pixelData) {
-      const parsed = JSON.parse(pixelData);
-      return parsed._id || '';
+    // Also check cookies for UTMify data
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name && (name.includes('utmify') || name === '_src')) {
+        try {
+          const decoded = decodeURIComponent(value);
+          const parsed = JSON.parse(decoded);
+          if (parsed._id) return parsed._id;
+        } catch {
+          if (value && value.length > 5 && value.length < 50) return value;
+        }
+      }
     }
   } catch (e) {
     console.log('[UTMify] Error getting lead ID:', e);

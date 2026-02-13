@@ -242,7 +242,21 @@ const CheckoutForm = () => {
     setError(null);
 
     try {
-      const utmData = getUTMDataForConversion();
+      const utmData = (getUTMDataForConversion() || {}) as Record<string, any>;
+      const { getUtmParams } = await import('@/hooks/useUtmifyStripePixel');
+      const utmifyParams = getUtmParams();
+      const mergedUtmData = {
+        ...utmData,
+        src: utmifyParams.src || utmData.src || '',
+        sck: utmifyParams.sck || utmData.sck || '',
+        utm_source: utmifyParams.utm_source || utmData.utm_source || '',
+        utm_medium: utmifyParams.utm_medium || utmData.utm_medium || '',
+        utm_campaign: utmifyParams.utm_campaign || utmData.utm_campaign || '',
+        utm_content: utmifyParams.utm_content || utmData.utm_content || '',
+        utm_term: utmifyParams.utm_term || utmData.utm_term || '',
+        fbclid: utmifyParams.fbclid || utmData.fbclid || '',
+        gclid: utmifyParams.gclid || utmData.gclid || '',
+      };
       
       // Use process-card-payment with rate limiting
       const { data, error: fnError } = await supabase.functions.invoke('process-card-payment', {
@@ -252,7 +266,7 @@ const CheckoutForm = () => {
           fullName: formData.fullName,
           postalCode: formData.postalCode,
           country: detectedCountry,
-          utmData,
+          utmData: mergedUtmData,
         },
       });
 
