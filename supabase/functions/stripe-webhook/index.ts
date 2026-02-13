@@ -109,7 +109,60 @@ serve(async (req) => {
       log("⚠️ DB error saving order", { error: dbErr instanceof Error ? dbErr.message : String(dbErr) });
     }
 
-    log("ℹ️ UTMify tracking delegated to Success Page (track-purchase)", { paymentId: pi.id });
+    // CRITICAL: Call track-purchase directly from webhook with Stripe metadata
+    // This is MORE RELIABLE than delegating to client-side Success page
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      
+      const trackingPayload = {
+        orderId: pi.id,
+        value: pi.amount / 100, // Convert cents to dollars
+        currency: pi.currency?.toUpperCase() || "USD",
+        email: meta.email || meta.customer_email || "",
+        name: meta.fullName || meta.customer_name || "Cliente",
+        productName: meta.packageName || meta.product_name || "COD Mobile CP",
+        trackingParams: {
+          src: meta.src || null,
+          sck: meta.sck || null,
+          utm_source: meta.utm_source || null,
+          utm_medium: meta.utm_medium || null,
+          utm_campaign: meta.utm_campaign || null,
+          utm_content: meta.utm_content || null,
+          utm_term: meta.utm_term || null,
+          fbclid: meta.fbclid || null,
+          gclid: meta.gclid || null,
+          ttclid: meta.ttclid || null,
+        },
+        source: "stripe_webhook"
+      };
+
+      log("📤 Calling track-purchase from webhook", { 
+        orderId: pi.id, 
+        trackingParams: trackingPayload.trackingParams 
+      });
+
+      const trackResponse = await fetch(`${supabaseUrl}/functions/v1/track-purchase`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceRoleKey}`,
+        },
+        body: JSON.stringify(trackingPayload),
+      });
+
+      const trackResult = await trackResponse.text();
+      log("📥 track-purchase response from webhook", { 
+        status: trackResponse.status, 
+        ok: trackResponse.ok,
+        body: trackResult.substring(0, 200)
+      });
+    } catch (trackErr) {
+      log("⚠️ track-purchase call failed (non-critical)", { 
+        error: trackErr instanceof Error ? trackErr.message : String(trackErr) 
+      });
+    }
 
     return new Response(
       JSON.stringify({ received: true, processed: true, paymentId: pi.id }),
