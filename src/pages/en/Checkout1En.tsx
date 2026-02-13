@@ -67,10 +67,10 @@ const CheckoutForm = () => {
 
   const packageData = {
     id: 'cp-800',
-    cp: 800,
-    bonus: 600,
-    total: 1400,
-    price: '9.00'
+    cp: 1200,
+    bonus: 1200,
+    total: 2400,
+    price: '9.90'
   };
 
   useEffect(() => {

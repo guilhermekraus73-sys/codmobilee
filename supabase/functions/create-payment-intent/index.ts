@@ -13,10 +13,10 @@ const logStep = (step: string, details?: any) => {
 
 // Preços em centavos USD
 const PRODUCTS: Record<string, { name: string; price: number; cp: number }> = {
-  'cp-800': { name: '800 CP + 600 Bonus', price: 900, cp: 1400 },    // $9.00 USD (checkout1)
-  'cp-1600': { name: '1600 CP + 1200 Bonus', price: 1590, cp: 2800 }, // $15.90 USD (checkout2)
-  'cp-4000': { name: '4000 CP + 1500 Bonus', price: 1990, cp: 5500 }, // $19.90 USD (checkout3)
-  'cp-test': { name: 'Test Package', price: 100, cp: 100 },           // $1.00 USD (test)
+  'cp-800': { name: '1200 CP + 1200 Bonus', price: 990, cp: 2400 },    // $9.90 USD (checkout1)
+  'cp-1600': { name: '2500 CP + 2500 Bonus', price: 1690, cp: 5000 },  // $16.90 USD (checkout2)
+  'cp-4000': { name: '5000 CP + 5000 Bonus', price: 1990, cp: 10000 }, // $19.90 USD (checkout3)
+  'cp-test': { name: 'Test Package', price: 100, cp: 100 },             // $1.00 USD (test)
 };
 
 serve(async (req) => {

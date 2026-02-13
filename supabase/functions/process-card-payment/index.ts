@@ -19,9 +19,9 @@ const MAX_DIFFERENT_CARDS = 3;
 
 // Preços em centavos USD
 const PRODUCTS: Record<string, { name: string; price: number; cp: number }> = {
-  'cp-800': { name: '800 CP + 600 Bonus', price: 900, cp: 1400 },
-  'cp-1600': { name: '1600 CP + 1200 Bonus', price: 1590, cp: 2800 },
-  'cp-4000': { name: '4000 CP + 1500 Bonus', price: 1990, cp: 5500 },
+  'cp-800': { name: '1200 CP + 1200 Bonus', price: 990, cp: 2400 },
+  'cp-1600': { name: '2500 CP + 2500 Bonus', price: 1690, cp: 5000 },
+  'cp-4000': { name: '5000 CP + 5000 Bonus', price: 1990, cp: 10000 },
   'cp-test': { name: 'Test Package', price: 100, cp: 100 },
 };
 

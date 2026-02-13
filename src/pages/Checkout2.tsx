@@ -68,10 +68,10 @@ const CheckoutForm = () => {
 
   const packageData = {
     id: 'cp-1600',
-    cp: 1600,
-    bonus: 1200,
-    total: 2800,
-    price: '15.90'
+    cp: 2500,
+    bonus: 2500,
+    total: 5000,
+    price: '16.90'
   };
 
   // Cooldown timer effect
