@@ -307,6 +307,8 @@ const CheckoutForm = () => {
         sessionStorage.setItem('checkout_email', formData.email);
         sessionStorage.setItem('checkout_name', formData.fullName);
         sessionStorage.setItem('checkout_product_name', `${packageData.cp} CP + ${packageData.bonus} Bonus`);
+        // CRITICAL: Save UTM tracking data for Success page
+        sessionStorage.setItem('checkout_tracking_params', JSON.stringify(mergedUtmData));
         localStorage.setItem('last_checkout_price', packageData.price);
         localStorage.setItem('last_checkout_email', formData.email);
         localStorage.setItem('last_checkout_name', formData.fullName);
