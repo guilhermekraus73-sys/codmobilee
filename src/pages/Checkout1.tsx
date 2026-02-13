@@ -7,6 +7,7 @@ import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import { initUTMTracking, trackPageView, trackInitiateCheckout, getUTMDataForConversion } from '@/lib/utmify';
 import { supabase } from '@/integrations/supabase/client';
+import { usePageTracking } from '@/hooks/usePageTracking';
 import { loadStripe, PaymentRequest } from '@stripe/stripe-js';
 import { 
   Elements, 

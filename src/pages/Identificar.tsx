@@ -17,6 +17,7 @@ import paymentBancolombia from '@/assets/payment-bancolombia.png';
 import paymentPaypal from '@/assets/payment-paypal.png';
 import paymentPse from '@/assets/payment-pse.png';
 import { useImagePreloader, preloadNextPageImages } from '@/hooks/useImagePreloader';
+import { usePageTracking } from '@/hooks/usePageTracking';
 
 // All images for this page + next page (Recharge)
 const pageImages = [
@@ -42,6 +43,7 @@ const Identificar = () => {
   const navigate = useNavigate();
   const { buildUrl } = useXcodUrl();
   const { isLoading, isReady } = useImagePreloader(pageImages, true);
+  usePageTracking('identify');
 
   // Preload next page images when this page is ready
   if (isReady) {

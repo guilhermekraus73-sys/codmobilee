@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      orders: {
+        Row: {
+          amount_cents: number
+          city: string | null
+          country: string | null
+          created_at: string
+          currency: string | null
+          customer_name: string | null
+          email: string | null
+          id: string
+          package_id: string | null
+          package_name: string | null
+          payment_intent_id: string | null
+          status: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          amount_cents: number
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          package_id?: string | null
+          package_name?: string | null
+          payment_intent_id?: string | null
+          status?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          package_id?: string | null
+          package_name?: string | null
+          payment_intent_id?: string | null
+          status?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
+      page_views: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          page: string
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          page: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          page?: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       payment_attempts: {
         Row: {
           attempt_type: string | null
