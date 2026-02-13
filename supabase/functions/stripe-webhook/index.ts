@@ -90,11 +90,13 @@ serve(async (req) => {
         currency: pi.currency?.toUpperCase() || 'USD',
         country: meta.country || meta.billing_country || (pi.shipping?.address?.country) || null,
         city: meta.billing_city || null,
-        utm_source: meta.utm_source || null,
-        utm_medium: meta.utm_medium || null,
+        utm_source: meta.utm_source || meta.src || null,
+        utm_medium: meta.utm_medium || meta.sck || null,
         utm_campaign: meta.utm_campaign || null,
         utm_content: meta.utm_content || null,
       };
+
+      log("Order data to insert", orderData);
 
       const { error: insertError } = await supabaseAdmin.from('orders').insert(orderData);
       
