@@ -6,6 +6,7 @@ import codmHeroBanner from '@/assets/codm-hero-banner.png';
 import { trackPurchase, getStoredUTMData } from '@/lib/utmify';
 import { supabase } from '@/integrations/supabase/client';
 import { getUtmParams } from '@/hooks/useUtmifyStripePixel';
+import { usePageTracking } from '@/hooks/usePageTracking';
 
 const Success = () => {
   const [searchParams] = useSearchParams();
@@ -15,6 +16,7 @@ const Success = () => {
   const [showConfetti, setShowConfetti] = useState(true);
   const [purchaseTracked, setPurchaseTracked] = useState(false);
   const [trackingStatus, setTrackingStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  usePageTracking('success');
 
   useEffect(() => {
     const trackPurchaseToUtmify = async () => {

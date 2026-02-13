@@ -18,6 +18,7 @@ import codmCheckoutBanner from '@/assets/codm-checkout-banner.png';
 import cpCoinsGold from '@/assets/cp-coins-gold.jpg';
 import { initUTMTracking, trackPageView } from '@/lib/utmify';
 import { useImagePreloader, preloadNextPageImages } from '@/hooks/useImagePreloader';
+import { usePageTracking } from '@/hooks/usePageTracking';
 
 // All images for this page
 const pageImages = [
@@ -78,6 +79,7 @@ const Recharge = () => {
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const { isLoading, isReady } = useImagePreloader(pageImages, true);
+  usePageTracking('recharge');
 
   // Preload checkout images when ready
   if (isReady) {

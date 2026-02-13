@@ -14,6 +14,7 @@ import Checkout2 from "./pages/Checkout2";
 import Checkout3 from "./pages/Checkout3";
 import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
+import Dashboard from "./pages/Dashboard";
 // English pages
 import QuizEn from "./pages/en/QuizEn";
 import IdentifyEn from "./pages/en/IdentifyEn";
@@ -58,6 +59,7 @@ const App = () => (
           <Route path="/checkout3" element={<Checkout3 />} />
           <Route path="/success" element={<Success />} />
           <Route path="/quiz" element={<Index />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           {/* English routes */}
           <Route path="/en" element={<QuizEn />} />
           <Route path="/en/quiz" element={<QuizEn />} />

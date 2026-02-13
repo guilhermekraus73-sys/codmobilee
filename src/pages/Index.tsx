@@ -5,10 +5,13 @@ import QuizQuestion from '@/components/QuizQuestion';
 import QuizResult from '@/components/QuizResult';
 import { initUTMTracking, trackPageView } from '@/lib/utmify';
 import { useXcodParam } from '@/hooks/useXcodParam';
+import { usePageTracking } from '@/hooks/usePageTracking';
 
 const Index = () => {
   // Capture xcod parameter from URL
   const xcod = useXcodParam();
+
+  usePageTracking('quiz');
 
   // Initialize UTM tracking on page load
   useEffect(() => {
