@@ -14,12 +14,27 @@ export const trackPageView = async (page: string) => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     
+    // Helper to get UTM from multiple storage locations
+    const getUtm = (key: string): string | null => {
+      return urlParams.get(key) 
+        || localStorage.getItem(`utm_${key}`) 
+        || sessionStorage.getItem(`utm_${key}`)
+        || null;
+    };
+
+    // Also try to read from utmify_params JSON
+    let storedUtmify: Record<string, string> = {};
+    try {
+      const raw = localStorage.getItem('utmify_params');
+      if (raw) storedUtmify = JSON.parse(raw);
+    } catch {}
+
     await supabase.from('page_views').insert({
       page,
       referrer: document.referrer || null,
-      utm_source: urlParams.get('utm_source') || localStorage.getItem('utm_utm_source') || null,
-      utm_medium: urlParams.get('utm_medium') || localStorage.getItem('utm_utm_medium') || null,
-      utm_campaign: urlParams.get('utm_campaign') || localStorage.getItem('utm_utm_campaign') || null,
+      utm_source: getUtm('utm_source') || storedUtmify.utm_source || storedUtmify.src || null,
+      utm_medium: getUtm('utm_medium') || storedUtmify.utm_medium || storedUtmify.sck || null,
+      utm_campaign: getUtm('utm_campaign') || storedUtmify.utm_campaign || null,
       user_agent: navigator.userAgent.substring(0, 200),
       session_id: getSessionId(),
     } as any);
