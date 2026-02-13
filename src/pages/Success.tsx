@@ -50,8 +50,8 @@ const Success = () => {
       // If still no price, determine from package mapping
       if (!packagePrice) {
         const priceMap: Record<string, string> = {
-          'cp-800': '9.00',
-          'cp-1600': '15.90',
+          'cp-800': '9.90',
+          'cp-1600': '16.90',
           'cp-4000': '19.90',
           'cp-test': '1.00',
         };

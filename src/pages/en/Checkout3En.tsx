@@ -50,7 +50,7 @@ const CheckoutForm = () => {
 
   const { canAttemptPayment, recordAttempt, handleRateLimitResponse, isBlocked, blockReason, getCooldownRemaining } = usePaymentRateLimiting();
 
-  const packageData = { id: 'cp-4000', cp: 4000, bonus: 1500, total: 5500, price: '19.90' };
+  const packageData = { id: 'cp-4000', cp: 5000, bonus: 5000, total: 10000, price: '19.90' };
 
   useEffect(() => {
     const interval = setInterval(() => setCooldownTimer(getCooldownRemaining()), 1000);
