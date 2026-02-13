@@ -125,9 +125,21 @@ const CheckoutForm = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const utmData = getUTMDataForConversion();
+      const utmData = (getUTMDataForConversion() || {}) as Record<string, any>;
+      const { getUtmParams } = await import('@/hooks/useUtmifyStripePixel');
+      const utmifyParams = getUtmParams();
+      const mergedUtmData = {
+        ...utmData,
+        src: utmifyParams.src || utmData.src || '',
+        sck: utmifyParams.sck || utmData.sck || '',
+        utm_source: utmifyParams.utm_source || utmData.utm_source || '',
+        utm_medium: utmifyParams.utm_medium || utmData.utm_medium || '',
+        utm_campaign: utmifyParams.utm_campaign || utmData.utm_campaign || '',
+        fbclid: utmifyParams.fbclid || utmData.fbclid || '',
+        gclid: utmifyParams.gclid || utmData.gclid || '',
+      };
       const { data, error: fnError } = await supabase.functions.invoke('process-card-payment', {
-        body: { packageId: packageData.id, email: formData.email, fullName: formData.fullName, postalCode: formData.postalCode, country: detectedCountry, utmData },
+        body: { packageId: packageData.id, email: formData.email, fullName: formData.fullName, postalCode: formData.postalCode, country: detectedCountry, utmData: mergedUtmData },
       });
       if (data?.blocked) { handleRateLimitResponse(data); setError(data.error || 'Rate limit exceeded'); setIsLoading(false); return; }
       if (fnError) throw new Error(fnError.message || 'Error creating payment');
@@ -144,6 +156,7 @@ const CheckoutForm = () => {
         sessionStorage.setItem('checkout_package', packageData.id);
         sessionStorage.setItem('checkout_email', formData.email);
         sessionStorage.setItem('checkout_name', formData.fullName);
+        sessionStorage.setItem('checkout_tracking_params', JSON.stringify(mergedUtmData));
         navigate(`/en/success?payment_intent=${paymentIntent.id}`);
       }
     } catch (err) {

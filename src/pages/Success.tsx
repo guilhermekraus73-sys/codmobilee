@@ -37,6 +37,14 @@ const Success = () => {
       // Get UTM data from both sources
       const utmData = getStoredUTMData();
       const trackingParams = getUtmParams(); // New UTMify format
+      
+      // CRITICAL: Read saved tracking params from checkout (most reliable source)
+      let savedTrackingParams: Record<string, string> = {};
+      try {
+        const raw = sessionStorage.getItem('checkout_tracking_params');
+        if (raw) savedTrackingParams = JSON.parse(raw);
+      } catch {}
+      console.log('[UTMify] Saved tracking params from checkout:', JSON.stringify(savedTrackingParams));
 
       // If sessionStorage is empty, try to get from localStorage
       if (!packagePrice) {
@@ -83,19 +91,18 @@ const Success = () => {
       // Track via server-side (edge function) - PRIMARY method with NEW FORMAT
       console.log('[UTMify] Sending to track-purchase edge function (PRIMARY)...');
       
-      // Merge tracking params from multiple sources
+      // Merge tracking params - prioritize saved checkout params (most reliable)
       const mergedTrackingParams = {
-        src: trackingParams.src || null,
-        sck: trackingParams.sck || null,
-        utm_source: trackingParams.utm_source || utmData?.utm_source || null,
-        utm_medium: trackingParams.utm_medium || utmData?.utm_medium || null,
-        utm_campaign: trackingParams.utm_campaign || utmData?.utm_campaign || null,
-        utm_content: trackingParams.utm_content || utmData?.utm_content || null,
-        utm_term: trackingParams.utm_term || utmData?.utm_term || null,
-        // IMPORTANTE: incluir fbclid e gclid para atribuição Meta/Google
-        fbclid: trackingParams.fbclid || utmData?.fbclid || localStorage.getItem('utm_fbclid') || sessionStorage.getItem('utm_fbclid') || null,
-        gclid: trackingParams.gclid || utmData?.gclid || localStorage.getItem('utm_gclid') || sessionStorage.getItem('utm_gclid') || null,
-        ttclid: utmData?.ttclid || localStorage.getItem('utm_ttclid') || sessionStorage.getItem('utm_ttclid') || null,
+        src: savedTrackingParams.src || trackingParams.src || null,
+        sck: savedTrackingParams.sck || trackingParams.sck || null,
+        utm_source: savedTrackingParams.utm_source || trackingParams.utm_source || utmData?.utm_source || null,
+        utm_medium: savedTrackingParams.utm_medium || trackingParams.utm_medium || utmData?.utm_medium || null,
+        utm_campaign: savedTrackingParams.utm_campaign || trackingParams.utm_campaign || utmData?.utm_campaign || null,
+        utm_content: savedTrackingParams.utm_content || trackingParams.utm_content || utmData?.utm_content || null,
+        utm_term: savedTrackingParams.utm_term || trackingParams.utm_term || utmData?.utm_term || null,
+        fbclid: savedTrackingParams.fbclid || trackingParams.fbclid || utmData?.fbclid || localStorage.getItem('utm_fbclid') || sessionStorage.getItem('utm_fbclid') || null,
+        gclid: savedTrackingParams.gclid || trackingParams.gclid || utmData?.gclid || localStorage.getItem('utm_gclid') || sessionStorage.getItem('utm_gclid') || null,
+        ttclid: savedTrackingParams.ttclid || utmData?.ttclid || localStorage.getItem('utm_ttclid') || sessionStorage.getItem('utm_ttclid') || null,
       };
 
       console.log('[UTMify] Merged tracking params:', JSON.stringify(mergedTrackingParams));
