@@ -35,7 +35,7 @@ serve(async (req) => {
     logStep("Stripe key verified");
 
     const { packageId, email, utmData } = await req.json();
-    logStep("Request parsed", { packageId, email, hasUtmData: !!utmData });
+    logStep("Request parsed", { packageId, email, hasUtmData: !!utmData, utmDataKeys: utmData ? Object.keys(utmData) : [] });
 
     // Validate package
     const product = PRODUCTS[packageId as keyof typeof PRODUCTS];
@@ -78,8 +78,11 @@ serve(async (req) => {
       payment_intent_data: {
         metadata: {
           packageId: String(packageId),
+          packageName: product.name,
           cpAmount: String(product.cp),
           email: email || "",
+          src: utmData?.src || "",
+          sck: utmData?.sck || "",
           utm_source: utmData?.utm_source || "",
           utm_medium: utmData?.utm_medium || "",
           utm_campaign: utmData?.utm_campaign || "",
@@ -87,7 +90,7 @@ serve(async (req) => {
           utm_term: utmData?.utm_term || "",
           fbclid: utmData?.fbclid || "",
           gclid: utmData?.gclid || "",
-          xcod: utmData?.xcod || "",
+          ttclid: utmData?.ttclid || "",
         },
       },
     });
