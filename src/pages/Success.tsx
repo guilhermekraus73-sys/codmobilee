@@ -3,9 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Check, ArrowRight, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
-import { trackPurchase, getStoredUTMData } from '@/lib/utmify';
-import { supabase } from '@/integrations/supabase/client';
-import { getUtmParams } from '@/hooks/useUtmifyStripePixel';
 import { usePageTracking } from '@/hooks/usePageTracking';
 
 const Success = () => {
@@ -14,188 +11,18 @@ const Success = () => {
   const sessionId = searchParams.get('session_id');
   const paymentIntentId = searchParams.get('payment_intent');
   const [showConfetti, setShowConfetti] = useState(true);
-  const [purchaseTracked, setPurchaseTracked] = useState(false);
-  const [trackingStatus, setTrackingStatus] = useState<'pending' | 'success' | 'error'>('pending');
   usePageTracking('success');
 
   useEffect(() => {
-    const trackPurchaseToUtmify = async () => {
-      // Get the order ID - prefer payment_intent, fallback to session_id
-      const orderId = paymentIntentId || sessionId;
-      if (!orderId || purchaseTracked) {
-        console.log('[UTMify] Skipping - no orderId or already tracked:', { orderId, purchaseTracked });
-        return;
-      }
+    // UTMify tracking is now handled exclusively by the Stripe webhook
+    // This prevents duplicate tracking events
+    console.log('[Success] Payment confirmed. Tracking handled by webhook.', {
+      orderId: paymentIntentId || sessionId,
+    });
 
-      // Get package info from sessionStorage with fallbacks
-      let packagePrice = sessionStorage.getItem('checkout_price');
-      let customerEmail = sessionStorage.getItem('checkout_email');
-      let customerName = sessionStorage.getItem('checkout_name');
-      const packageId = sessionStorage.getItem('checkout_package');
-      const packageName = sessionStorage.getItem('checkout_product_name');
-      
-      // Get UTM data from both sources
-      const utmData = getStoredUTMData();
-      const trackingParams = getUtmParams(); // New UTMify format
-      
-      // CRITICAL: Read saved tracking params from checkout (most reliable source)
-      let savedTrackingParams: Record<string, string> = {};
-      try {
-        const raw = sessionStorage.getItem('checkout_tracking_params');
-        if (raw) savedTrackingParams = JSON.parse(raw);
-      } catch {}
-      console.log('[UTMify] Saved tracking params from checkout:', JSON.stringify(savedTrackingParams));
-
-      // If sessionStorage is empty, try to get from localStorage
-      if (!packagePrice) {
-        packagePrice = localStorage.getItem('last_checkout_price');
-      }
-      if (!customerEmail) {
-        customerEmail = localStorage.getItem('last_checkout_email');
-      }
-      if (!customerName) {
-        customerName = localStorage.getItem('last_checkout_name');
-      }
-
-      // If still no price, determine from package mapping
-      if (!packagePrice) {
-        const priceMap: Record<string, string> = {
-          'cp-800': '9.90',
-          'cp-1600': '16.90',
-          'cp-4000': '19.90',
-          'cp-test': '1.00',
-        };
-        packagePrice = packageId ? priceMap[packageId] || '9.00' : '9.00';
-      }
-
-      console.log('[UTMify] ========================================');
-      console.log('[UTMify] PRIMARY TRACKING FROM CHECKOUT SUCCESS');
-      console.log('[UTMify] ========================================');
-      console.log('[UTMify] Order ID:', orderId);
-      console.log('[UTMify] Price:', packagePrice, 'USD');
-      console.log('[UTMify] Email:', customerEmail || 'not provided');
-      console.log('[UTMify] Name:', customerName || 'not provided');
-      console.log('[UTMify] Package:', packageId || 'unknown');
-      console.log('[UTMify] Product Name:', packageName || 'COD Mobile CP');
-      console.log('[UTMify] Tracking Params:', JSON.stringify(trackingParams));
-      console.log('[UTMify] UTM Data:', JSON.stringify(utmData));
-
-      // MÉTODO 1: Track via client-side (pixel) - may be blocked by ad blockers
-      try {
-        trackPurchase(orderId, parseFloat(packagePrice), 'USD');
-        console.log('[UTMify] ✅ Client-side pixel tracking dispatched');
-      } catch (e) {
-        console.error('[UTMify] ❌ Client-side pixel error:', e);
-      }
-
-      // Track via server-side (edge function) - PRIMARY method with NEW FORMAT
-      console.log('[UTMify] Sending to track-purchase edge function (PRIMARY)...');
-      
-      // Merge tracking params - prioritize saved checkout params (most reliable)
-      const mergedTrackingParams = {
-        src: savedTrackingParams.src || trackingParams.src || null,
-        sck: savedTrackingParams.sck || trackingParams.sck || null,
-        utm_source: savedTrackingParams.utm_source || trackingParams.utm_source || utmData?.utm_source || null,
-        utm_medium: savedTrackingParams.utm_medium || trackingParams.utm_medium || utmData?.utm_medium || null,
-        utm_campaign: savedTrackingParams.utm_campaign || trackingParams.utm_campaign || utmData?.utm_campaign || null,
-        utm_content: savedTrackingParams.utm_content || trackingParams.utm_content || utmData?.utm_content || null,
-        utm_term: savedTrackingParams.utm_term || trackingParams.utm_term || utmData?.utm_term || null,
-        fbclid: savedTrackingParams.fbclid || trackingParams.fbclid || utmData?.fbclid || localStorage.getItem('utm_fbclid') || sessionStorage.getItem('utm_fbclid') || null,
-        gclid: savedTrackingParams.gclid || trackingParams.gclid || utmData?.gclid || localStorage.getItem('utm_gclid') || sessionStorage.getItem('utm_gclid') || null,
-        ttclid: savedTrackingParams.ttclid || utmData?.ttclid || localStorage.getItem('utm_ttclid') || sessionStorage.getItem('utm_ttclid') || null,
-      };
-
-      console.log('[UTMify] Merged tracking params:', JSON.stringify(mergedTrackingParams));
-
-      const trackingPayload = {
-        orderId,
-        value: parseFloat(packagePrice),
-        currency: 'USD',
-        email: customerEmail || '',
-        name: customerName || 'Cliente',
-        productName: packageName || 'COD Mobile CP',
-        trackingParams: mergedTrackingParams,
-        source: 'checkout_success'
-      };
-
-      let trackingSuccess = false;
-
-      // Primeira tentativa
-      try {
-        const { data, error } = await supabase.functions.invoke('track-purchase', {
-          body: trackingPayload
-        });
-
-        if (error) {
-          console.error('[UTMify] ❌ First attempt failed:', error);
-        } else if (data?.success) {
-          console.log('[UTMify] ✅ TRACKING SUCCESS (1st attempt):', data);
-          trackingSuccess = true;
-          setTrackingStatus('success');
-        } else {
-          console.warn('[UTMify] ⚠️ Response received but success unclear:', data);
-        }
-      } catch (err) {
-        console.error('[UTMify] ❌ First attempt exception:', err);
-      }
-
-      // Segunda tentativa se a primeira falhar
-      if (!trackingSuccess) {
-        console.log('[UTMify] Retrying in 3 seconds...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        try {
-          const { data, error } = await supabase.functions.invoke('track-purchase', {
-            body: trackingPayload
-          });
-
-          if (error) {
-            console.error('[UTMify] ❌ Second attempt failed:', error);
-          } else if (data?.success) {
-            console.log('[UTMify] ✅ TRACKING SUCCESS (2nd attempt):', data);
-            trackingSuccess = true;
-            setTrackingStatus('success');
-          }
-        } catch (err) {
-          console.error('[UTMify] ❌ Second attempt exception:', err);
-        }
-      }
-
-      // Terceira tentativa se as duas primeiras falharem
-      if (!trackingSuccess) {
-        console.log('[UTMify] Final retry in 5 seconds...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        try {
-          const { data, error } = await supabase.functions.invoke('track-purchase', {
-            body: trackingPayload
-          });
-
-          if (!error && data?.success) {
-            console.log('[UTMify] ✅ TRACKING SUCCESS (3rd attempt):', data);
-            setTrackingStatus('success');
-          } else {
-            console.error('[UTMify] ❌ All attempts failed');
-            setTrackingStatus('error');
-          }
-        } catch (err) {
-          console.error('[UTMify] ❌ Final attempt exception:', err);
-          setTrackingStatus('error');
-        }
-      }
-
-      setPurchaseTracked(true);
-      console.log('[UTMify] ========================================');
-      console.log('[UTMify] CHECKOUT TRACKING COMPLETE');
-      console.log('[UTMify] ========================================');
-    };
-
-    trackPurchaseToUtmify();
-
-    // Hide confetti after animation
     const timer = setTimeout(() => setShowConfetti(false), 3000);
     return () => clearTimeout(timer);
-  }, [sessionId, paymentIntentId, purchaseTracked]);
+  }, [sessionId, paymentIntentId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] to-[#1a1a1a] flex flex-col">

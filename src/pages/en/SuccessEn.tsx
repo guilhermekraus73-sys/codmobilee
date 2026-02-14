@@ -3,78 +3,19 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Check, Home, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import codmHeroBanner from '@/assets/codm-hero-banner.png';
-import { trackPurchase, getStoredUTMData } from '@/lib/utmify';
-import { supabase } from '@/integrations/supabase/client';
-import { getUtmParams } from '@/hooks/useUtmifyStripePixel';
 
 const SuccessEn = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get('session_id');
   const paymentIntentId = searchParams.get('payment_intent');
-  const [purchaseTracked, setPurchaseTracked] = useState(false);
 
   useEffect(() => {
-    const trackPurchaseEvent = async () => {
-      const orderId = paymentIntentId || sessionId;
-      if (!orderId || purchaseTracked) return;
-
-      const price = sessionStorage.getItem('checkout_price') || localStorage.getItem('last_checkout_price');
-      const email = sessionStorage.getItem('checkout_email') || localStorage.getItem('last_checkout_email');
-      const name = sessionStorage.getItem('checkout_name') || localStorage.getItem('last_checkout_name');
-      const productName = sessionStorage.getItem('checkout_product_name');
-
-      if (price) {
-        trackPurchase(orderId, parseFloat(price), 'USD');
-      }
-
-      // Read saved tracking params from checkout (most reliable)
-      let savedTrackingParams: Record<string, string> = {};
-      try {
-        const raw = sessionStorage.getItem('checkout_tracking_params');
-        if (raw) savedTrackingParams = JSON.parse(raw);
-      } catch {}
-
-      const utmData = getStoredUTMData();
-      const trackingParams = getUtmParams();
-
-      const mergedTrackingParams = {
-        src: savedTrackingParams.src || trackingParams.src || null,
-        sck: savedTrackingParams.sck || trackingParams.sck || null,
-        utm_source: savedTrackingParams.utm_source || trackingParams.utm_source || utmData?.utm_source || null,
-        utm_medium: savedTrackingParams.utm_medium || trackingParams.utm_medium || utmData?.utm_medium || null,
-        utm_campaign: savedTrackingParams.utm_campaign || trackingParams.utm_campaign || utmData?.utm_campaign || null,
-        utm_content: savedTrackingParams.utm_content || trackingParams.utm_content || utmData?.utm_content || null,
-        utm_term: savedTrackingParams.utm_term || trackingParams.utm_term || utmData?.utm_term || null,
-        fbclid: savedTrackingParams.fbclid || trackingParams.fbclid || utmData?.fbclid || null,
-        gclid: savedTrackingParams.gclid || trackingParams.gclid || utmData?.gclid || null,
-      };
-
-      console.log('[SuccessEn] Merged tracking params:', JSON.stringify(mergedTrackingParams));
-
-      try {
-        await supabase.functions.invoke('track-purchase', {
-          body: {
-            orderId,
-            value: parseFloat(price || '9'),
-            currency: 'USD',
-            email: email || '',
-            name: name || 'Cliente',
-            productName: productName || 'COD Mobile CP',
-            trackingParams: mergedTrackingParams,
-            source: 'checkout_success_en'
-          }
-        });
-        console.log('[SuccessEn] ✅ Track-purchase sent');
-      } catch (err) {
-        console.error('[SuccessEn] ❌ Track-purchase error:', err);
-      }
-
-      setPurchaseTracked(true);
-    };
-
-    trackPurchaseEvent();
-  }, [sessionId, paymentIntentId, purchaseTracked]);
+    // UTMify tracking is now handled exclusively by the Stripe webhook
+    console.log('[SuccessEn] Payment confirmed. Tracking handled by webhook.', {
+      orderId: paymentIntentId || sessionId,
+    });
+  }, [sessionId, paymentIntentId]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
