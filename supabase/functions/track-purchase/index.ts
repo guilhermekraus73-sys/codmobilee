@@ -46,12 +46,32 @@ serve(async (req) => {
     const priceInCents = Math.round(value * 100);
     log("Price conversion", { originalValue: value, priceInCents });
 
-    // Build tracking parameters
+    // Build tracking parameters - NEVER let empty/null UTMs cause failures
     const tracking = trackingParams || {};
     
-    log("Tracking params received", tracking);
+    // Sanitize: convert null/undefined to empty string to prevent API rejections
+    const safeStr = (val: unknown): string => {
+      if (val === null || val === undefined || val === "null" || val === "undefined") return "";
+      return String(val).trim();
+    };
     
-    // Build UTMify payload with CORRECT FORMAT including fbclid/gclid
+    const sanitizedTracking = {
+      src: safeStr(tracking.src),
+      sck: safeStr(tracking.sck),
+      utm_source: safeStr(tracking.utm_source),
+      utm_medium: safeStr(tracking.utm_medium),
+      utm_campaign: safeStr(tracking.utm_campaign),
+      utm_content: safeStr(tracking.utm_content),
+      utm_term: safeStr(tracking.utm_term),
+      fbclid: safeStr(tracking.fbclid),
+      gclid: safeStr(tracking.gclid),
+      ttclid: safeStr(tracking.ttclid),
+    };
+    
+    const hasAnyTracking = Object.values(sanitizedTracking).some(v => v !== "");
+    log("Tracking params sanitized", { sanitizedTracking, hasAnyTracking });
+    
+    // Build UTMify payload - send even with empty UTMs (UTMify will still record the sale)
     const utmifyPayload = {
       orderId: orderId,
       platform: "Stripe",
@@ -76,17 +96,16 @@ serve(async (req) => {
         priceInCents: priceInCents,
       }],
       trackingParameters: {
-        src: tracking.src || null,
-        sck: tracking.sck || null,
-        utm_source: tracking.utm_source || null,
-        utm_medium: tracking.utm_medium || null,
-        utm_campaign: tracking.utm_campaign || null,
-        utm_content: tracking.utm_content || null,
-        utm_term: tracking.utm_term || null,
-        // IMPORTANTE: incluir fbclid e gclid para atribuição Meta/Google
-        fbclid: tracking.fbclid || null,
-        gclid: tracking.gclid || null,
-        ttclid: tracking.ttclid || null,
+        src: sanitizedTracking.src || null,
+        sck: sanitizedTracking.sck || null,
+        utm_source: sanitizedTracking.utm_source || null,
+        utm_medium: sanitizedTracking.utm_medium || null,
+        utm_campaign: sanitizedTracking.utm_campaign || null,
+        utm_content: sanitizedTracking.utm_content || null,
+        utm_term: sanitizedTracking.utm_term || null,
+        fbclid: sanitizedTracking.fbclid || null,
+        gclid: sanitizedTracking.gclid || null,
+        ttclid: sanitizedTracking.ttclid || null,
       },
       commission: {
         totalPriceInCents: priceInCents,
@@ -157,12 +176,13 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    log("CRITICAL ERROR", { message: errorMessage });
+    log("CRITICAL ERROR (returning 200 to prevent webhook retry failures)", { message: errorMessage });
+    // IMPORTANT: Always return 200 so the webhook doesn't retry and we don't lose the sale record
     return new Response(
       JSON.stringify({ error: errorMessage, success: false }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: 200,
       }
     );
   }
