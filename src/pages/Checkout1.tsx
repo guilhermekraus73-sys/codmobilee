@@ -115,7 +115,21 @@ const CheckoutForm = () => {
 
     pr.on('paymentmethod', async (event) => {
       try {
-        const utmData = getUTMDataForConversion();
+        const baseUtm = (getUTMDataForConversion() || {}) as Record<string, any>;
+        const { getUtmParams } = await import('@/hooks/useUtmifyStripePixel');
+        const utmifyParams = getUtmParams();
+        const utmData = {
+          ...baseUtm,
+          src: utmifyParams.src || baseUtm.src || '',
+          sck: utmifyParams.sck || baseUtm.sck || '',
+          utm_source: utmifyParams.utm_source || baseUtm.utm_source || '',
+          utm_medium: utmifyParams.utm_medium || baseUtm.utm_medium || '',
+          utm_campaign: utmifyParams.utm_campaign || baseUtm.utm_campaign || '',
+          utm_content: utmifyParams.utm_content || baseUtm.utm_content || '',
+          utm_term: utmifyParams.utm_term || baseUtm.utm_term || '',
+          fbclid: utmifyParams.fbclid || baseUtm.fbclid || '',
+          gclid: utmifyParams.gclid || baseUtm.gclid || '',
+        };
         
         const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
           body: {
