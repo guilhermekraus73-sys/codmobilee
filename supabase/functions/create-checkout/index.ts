@@ -77,6 +77,7 @@ serve(async (req) => {
       // IMPORTANT: Use payment_intent_data.metadata to pass data to webhook
       payment_intent_data: {
         metadata: {
+          app: "codmobile",
           packageId: String(packageId),
           packageName: product.name,
           cpAmount: String(product.cp),

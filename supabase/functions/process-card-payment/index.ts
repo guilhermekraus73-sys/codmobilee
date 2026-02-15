@@ -174,6 +174,7 @@ serve(async (req) => {
       currency: "usd",
       customer: customerId,
       metadata: {
+        app: "codmobile",
         packageId,
         packageName: product.name,
         cpAmount: product.cp.toString(),

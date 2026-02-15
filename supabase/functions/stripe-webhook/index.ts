@@ -69,8 +69,17 @@ serve(async (req) => {
     const meta = pi.metadata || {};
 
     log("PaymentIntent received", {
-      id: pi.id, amount: pi.amount, currency: pi.currency, metadata_keys: Object.keys(meta),
+      id: pi.id, amount: pi.amount, currency: pi.currency, metadata_keys: Object.keys(meta), app: meta.app,
     });
+
+    // CRITICAL: Only process sales from THIS app to prevent duplicate UTMify notifications
+    const isOurApp = meta.app === "codmobile";
+    if (!isOurApp) {
+      log("⚠️ Ignoring sale from another product/app (no app:codmobile metadata)", { id: pi.id, app: meta.app });
+      return new Response(JSON.stringify({ received: true, ignored: true, reason: "not_our_app" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
+      });
+    }
 
     // Save order to database
     try {
