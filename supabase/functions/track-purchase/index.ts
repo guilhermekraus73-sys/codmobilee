@@ -49,10 +49,16 @@ serve(async (req) => {
     // Build tracking parameters - NEVER let empty/null UTMs cause failures
     const tracking = trackingParams || {};
     
-    // Sanitize: convert null/undefined to empty string to prevent API rejections
+    // Sanitize: convert null/undefined/unresolved macros to empty string
     const safeStr = (val: unknown): string => {
       if (val === null || val === undefined || val === "null" || val === "undefined") return "";
-      return String(val).trim();
+      const str = String(val).trim();
+      // Strip unresolved Facebook/ad platform macros like {{campaign.name}}, {{adset.id}}, etc.
+      if (str.includes("{{") && str.includes("}}")) {
+        log("Stripping unresolved macro", { original: str });
+        return "";
+      }
+      return str;
     };
     
     const sanitizedTracking = {
