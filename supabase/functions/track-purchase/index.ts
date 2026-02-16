@@ -96,8 +96,8 @@ serve(async (req) => {
       products: [{
         id: "produto-02",
         name: "Produto 02",
-        planId: null,
-        planName: null,
+        planId: "produto-02",
+        planName: "Produto 02",
         quantity: 1,
         priceInCents: priceInCents,
       }],
