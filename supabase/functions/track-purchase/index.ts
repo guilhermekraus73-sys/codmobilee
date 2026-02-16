@@ -22,8 +22,8 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, value, currency, email, name, productName, trackingParams, source } = await req.json();
-    log("Request data", { orderId, value, currency, email, name, productName, hasTrackingParams: !!trackingParams, source });
+    const { orderId, value, currency, email, name, productName, packageId, trackingParams, source } = await req.json();
+    log("Request data", { orderId, value, currency, email, name, productName, packageId, hasTrackingParams: !!trackingParams, source });
 
     // Validate required fields
     if (!orderId || value === undefined || value === null) {
@@ -94,10 +94,10 @@ serve(async (req) => {
         country: "US",
       },
       products: [{
-        id: "produto-02",
-        name: "Produto 02",
-        planId: "produto-02",
-        planName: "Produto 02",
+        id: packageId || "produto-02",
+        name: productName || "Produto 02",
+        planId: packageId || null,
+        planName: productName || null,
         quantity: 1,
         priceInCents: priceInCents,
       }],
