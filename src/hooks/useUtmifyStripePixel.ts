@@ -74,34 +74,86 @@ export const getUtmifyLeadId = (): string => {
   return '';
 };
 
-// Get UTM parameters from URL and localStorage
+// Scan ALL localStorage keys for UTMify-related data
+const scanUtmifyStorage = (): Record<string, string> => {
+  const result: Record<string, string> = {};
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      const lk = key.toLowerCase();
+      if (lk.includes('utmify') || lk.includes('utm_') || lk === '_src' || lk === '_sck' || lk === 'src' || lk === 'sck') {
+        const val = localStorage.getItem(key);
+        if (!val) continue;
+        try {
+          const parsed = JSON.parse(val);
+          if (typeof parsed === 'object' && parsed !== null) {
+            // Extract known fields from JSON objects
+            for (const [pk, pv] of Object.entries(parsed)) {
+              if (typeof pv === 'string' && pv.length > 0) {
+                result[pk] = pv;
+              }
+            }
+          }
+        } catch {
+          // Plain string value
+          if (val.length > 0 && val.length < 500) {
+            result[key] = val;
+          }
+        }
+      }
+    }
+    console.log('[UTMify] Storage scan found:', Object.keys(result).length, 'entries');
+  } catch (e) {
+    console.log('[UTMify] Storage scan error:', e);
+  }
+  return result;
+};
+
+// Get UTM parameters from URL, localStorage, UTMify pixel data
 export const getUtmParams = () => {
   const urlParams = new URLSearchParams(window.location.search);
+  const storedData = scanUtmifyStorage();
   
   const getParam = (key: string): string => {
-    // First check URL, then localStorage, then sessionStorage
+    // 1. URL params (highest priority)
     const urlValue = urlParams.get(key);
     if (urlValue) return urlValue;
     
+    // 2. localStorage utm_ prefixed
     const localValue = localStorage.getItem(`utm_${key}`);
     if (localValue) return localValue;
     
+    // 3. sessionStorage utm_ prefixed
     const sessionValue = sessionStorage.getItem(`utm_${key}`);
     if (sessionValue) return sessionValue;
+
+    // 4. UTMify storage scan
+    if (storedData[key]) return storedData[key];
     
     return '';
   };
 
+  const fbclid = getParam('fbclid');
+  const gclid = getParam('gclid');
+  let utm_source = getParam('utm_source');
+
+  // CRITICAL FALLBACK: infer utm_source from click IDs when missing
+  if (!utm_source) {
+    if (fbclid) utm_source = 'facebook';
+    else if (gclid) utm_source = 'google';
+  }
+
   const params = {
     src: getParam('src') || getUtmifyLeadId(),
     sck: getParam('sck'),
-    utm_source: getParam('utm_source'),
+    utm_source,
     utm_medium: getParam('utm_medium'),
     utm_campaign: getParam('utm_campaign'),
     utm_content: getParam('utm_content'),
     utm_term: getParam('utm_term'),
-    fbclid: getParam('fbclid'),
-    gclid: getParam('gclid'),
+    fbclid,
+    gclid,
   };
 
   console.log('[UTMify] getUtmParams:', params);

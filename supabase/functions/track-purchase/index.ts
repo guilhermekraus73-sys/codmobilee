@@ -73,6 +73,17 @@ serve(async (req) => {
       gclid: safeStr(tracking.gclid),
       ttclid: safeStr(tracking.ttclid),
     };
+
+    // CRITICAL FALLBACK: infer utm_source from click IDs when missing
+    if (!sanitizedTracking.utm_source) {
+      if (sanitizedTracking.fbclid) {
+        sanitizedTracking.utm_source = "facebook";
+        log("Inferred utm_source from fbclid", { utm_source: "facebook" });
+      } else if (sanitizedTracking.gclid) {
+        sanitizedTracking.utm_source = "google";
+        log("Inferred utm_source from gclid", { utm_source: "google" });
+      }
+    }
     
     const hasAnyTracking = Object.values(sanitizedTracking).some(v => v !== "");
     log("Tracking params sanitized", { sanitizedTracking, hasAnyTracking });
