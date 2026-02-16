@@ -44,6 +44,12 @@ export const captureUTMParams = (): UTMData => {
     }
   });
 
+  // CRITICAL FALLBACK: infer utm_source from click IDs when not present
+  if (!utmData.utm_source) {
+    if (utmData.fbclid) utmData.utm_source = 'facebook';
+    else if (utmData.gclid) utmData.utm_source = 'google';
+  }
+
   // Add metadata
   utmData.landing_page = window.location.href;
   utmData.referrer = document.referrer || undefined;
