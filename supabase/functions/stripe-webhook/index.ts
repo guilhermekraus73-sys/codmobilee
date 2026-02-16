@@ -132,6 +132,7 @@ serve(async (req) => {
         email: meta.email || meta.customer_email || "",
         name: meta.fullName || meta.customer_name || "Cliente",
         productName: meta.packageName || meta.product_name || "COD Mobile CP",
+        packageId: meta.packageId || meta.product || "produto-02",
         trackingParams: {
           src: meta.src || null,
           sck: meta.sck || null,
