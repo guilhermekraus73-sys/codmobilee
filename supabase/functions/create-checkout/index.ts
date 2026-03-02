@@ -61,8 +61,8 @@ serve(async (req) => {
       price_data: {
             currency: "usd",
             product_data: {
-              name: `Guía Estratégica del Jugador - ${product.tier}`,
-              description: `Guía Estratégica del Jugador - ${product.tier} | Edición ${product.tier}`,
+              name: `Guía Digital para Jugadores - ${product.tier}`,
+              description: `Guía Digital para Jugadores - ${product.tier} | Edición ${product.tier}`,
               images: ["https://upload.wikimedia.org/wikipedia/en/8/87/Call_of_Duty_Mobile_cover.jpg"],
             },
             unit_amount: product.price,
