@@ -20,7 +20,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { usePaymentRateLimiting, isValidEmail } from '@/hooks/usePaymentRateLimiting';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe('pk_live_51TFMF9CdQULC6iVNqQ47inB5Zf1My80mCm2yyDsLKHtXa6f5rC81sOl5Q0KRz3JTFKdfZqZ0tgv110mvJCi3iDsI00wUB1Hizn');
 
 const cardElementStyles = {
   style: {
